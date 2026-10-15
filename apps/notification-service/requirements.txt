@@ -1,0 +1,7 @@
+# Runtime dependencies, pinned (Dependabot proposes upgrades, topic 13).
+fastapi==0.143.1
+uvicorn[standard]==0.54.0
+prometheus-client==0.26.0
+nats-py==2.16.0
+opentelemetry-sdk==1.45.1
+opentelemetry-exporter-otlp-proto-http==1.45.1

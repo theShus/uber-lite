@@ -1,0 +1,15 @@
+# Tool configuration only; dependencies live in requirements*.txt.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+extend-exclude = ["app/proto/*_pb2*.py", "app/proto/*_pb2*.pyi"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM"]
+ignore = ["N818"]  # exception names like PoisonMessage read better without an "Error" suffix

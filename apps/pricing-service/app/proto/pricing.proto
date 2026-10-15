@@ -1,0 +1,29 @@
+// The pricing contract. rider-api carries an identical copy (apps/rider-api/app/proto/).
+// After changing it, regenerate the Python code in BOTH services (see README.md).
+syntax = "proto3";
+
+package uberlite.pricing.v1;
+
+service Pricing {
+  // A price for a ride from pickup to dropoff, including the current surge.
+  rpc Quote(QuoteRequest) returns (QuoteReply);
+}
+
+message Point {
+  double lat = 1;
+  double lon = 2;
+}
+
+message QuoteRequest {
+  Point pickup = 1;
+  Point dropoff = 2;
+  string rider_id = 3;
+}
+
+message QuoteReply {
+  string quote_id = 1;
+  int64 amount_cents = 2;
+  string currency = 3;
+  double surge = 4;
+  double distance_km = 5;
+}

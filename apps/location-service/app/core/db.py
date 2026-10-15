@@ -62,7 +62,8 @@ def migrate(migrations: list[tuple[int, str, str]]) -> int:
                 with conn.transaction():
                     conn.execute(sql)
                     conn.execute("INSERT INTO schema_migrations (version, name) VALUES (%s, %s)", (version, name))
-                log.info("migration applied", extra={"version": version, "name": name})
+                # not "name": that's a reserved LogRecord attribute, and logging raises KeyError on it
+                log.info("migration applied", extra={"version": version, "migration": name})
                 applied += 1
         finally:
             conn.execute("SELECT pg_advisory_unlock(%s)", (MIGRATION_LOCK,))

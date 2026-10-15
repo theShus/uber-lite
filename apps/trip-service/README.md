@@ -75,3 +75,9 @@ Database `trips`, table `trips` (`app/migrations.py`), with a partial index for 
 pip install -r requirements-dev.txt && pytest -q
 ```
 Fakes stand in for Postgres, Kafka and NATS. The NATS stream and consumer setup was also checked against a real `nats-server -js` (2.15.1) when the service was written.
+
+Against a **real Postgres** (skipped unless `PG_TEST_URL` is set):
+```bash
+PG_TEST_URL=postgresql://trips:trips@localhost:5432/trips pytest -q tests/test_store_pg.py
+```
+They check that a duplicate `ride.matched` starts no second trip, that a failed publish leaves the trip `started`, and that two schedulers split the due trips between them (`FOR UPDATE SKIP LOCKED`). Verified against PostgreSQL 18.6.

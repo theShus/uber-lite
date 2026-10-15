@@ -65,3 +65,8 @@ Database `payments`, table `payments`: ride_id (PK), amount_cents, currency, sta
 ```bash
 pip install -r requirements-dev.txt && pytest -q
 ```
+Against a **real Postgres** (skipped unless `PG_TEST_URL` is set):
+```bash
+PG_TEST_URL=postgresql://payments:payments@localhost:5432/payments pytest -q tests/test_store_pg.py
+```
+They check that the first insert wins and that a redelivered `trip.completed` is settled again but never charged twice. Verified against PostgreSQL 18.6.

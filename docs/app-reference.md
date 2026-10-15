@@ -120,4 +120,8 @@ ruff check . && ruff format --check .
 ```
 - **`app/core/` is the same in every service:** logging, metrics, health, shutdown, Kafka, Postgres, tracing. It's copied, not shared as a package, so each service builds from its own folder alone. Change it in one service, copy it to the others, and check with `diff -r apps/rider-api/app/core apps/<other>/app/core`. A larger organisation would publish it as an internal library instead.
 - **`app/proto/`** in pricing-service and rider-api: the gRPC contract (pricing-service's README explains how to regenerate it).
-- The tests need no containers: they use fakes and an in-memory Valkey (fakeredis). notification-service has one optional test against a real NATS (`NATS_TEST_URL`).
+- The tests need no containers: they use fakes and an in-memory Valkey (fakeredis). Some optional tests run against the real thing when you point them at it:
+  - `PG_TEST_URL` (rider-api, trip-service, payment-service): migrations and the store SQL against a real Postgres
+  - `NATS_TEST_URL` (notification-service): the JetStream consumer against a real `nats-server -js`
+
+  CI can run them with a Postgres service container (topic 13).

@@ -78,4 +78,10 @@ pip install -r requirements-dev.txt && pytest -q
 ```
 In-memory fakes stand in for Postgres, pricing and Kafka. The tests cover the outbox behaviour (Kafka down → the event waits → delivered when it's back), the error codes, and readiness.
 
+Against a **real Postgres** (skipped unless `PG_TEST_URL` is set; the user must be allowed to own the database):
+```bash
+PG_TEST_URL=postgresql://rides:rides@localhost:5432/rides pytest -q tests/test_store_pg.py
+```
+They run the migrations, then check the real SQL: a ride and its outbox row commit together, a Kafka failure rolls the relay back, and two relays never send the same row (`FOR UPDATE SKIP LOCKED`). Verified against PostgreSQL 18.6.
+
 `app/proto/` is rider-api's copy of pricing-service's contract. See pricing-service's README to regenerate it.

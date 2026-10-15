@@ -1,6 +1,7 @@
 """Postgres: connection pools and a small migration runner (psycopg 3).
 
 DATABASE_URL   postgresql://user:password@host:5432/db   (required)
+DB_POOL_MIN    1                                         connections each pod opens at startup and keeps
 DB_POOL_MAX    10                                        connections per pod (topic 17: pods × this ≤ max_connections)
 """
 
@@ -16,17 +17,18 @@ log = logging.getLogger("db")
 MIGRATION_LOCK = 4_242_001  # pg_advisory_lock key: two migration Jobs never run at the same time
 
 
+def pool_sizes() -> dict:
+    max_size = env_int("DB_POOL_MAX", 10)
+    return {"min_size": min(env_int("DB_POOL_MIN", 1), max_size), "max_size": max_size}
+
+
 def async_pool() -> AsyncConnectionPool:
     """Opened by the caller with `await pool.open(wait=False)`: the app starts even if Postgres isn't up yet."""
-    return AsyncConnectionPool(
-        env_str("DATABASE_URL"), min_size=1, max_size=env_int("DB_POOL_MAX", 10), open=False, timeout=5
-    )
+    return AsyncConnectionPool(env_str("DATABASE_URL"), **pool_sizes(), open=False, timeout=5)
 
 
 def sync_pool() -> ConnectionPool:
-    return ConnectionPool(
-        env_str("DATABASE_URL"), min_size=1, max_size=env_int("DB_POOL_MAX", 10), open=False, timeout=5
-    )
+    return ConnectionPool(env_str("DATABASE_URL"), **pool_sizes(), open=False, timeout=5)
 
 
 def async_check(pool: AsyncConnectionPool):

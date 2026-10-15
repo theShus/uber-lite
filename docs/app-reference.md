@@ -103,6 +103,7 @@ One server, a database and a user per service (database per service): `rides`, `
 | `KAFKA_ACKS`, `KAFKA_LINGER_MS`, `KAFKA_COMPRESSION` | all producers | durability and batching (topic 20) |
 | `PSP_FAILURE_RATE`, `PSP_LATENCY_MS` | payment-service | failures and latency → SLOs and alerts (topic 19) |
 | `TRIP_DURATION_S`, `BUSY_TTL_SECONDS` | trip, matching | how long drivers are tied up → unmatched rides at rush hour |
+| `DB_POOL_MIN`, `DB_POOL_MAX` | rider, trip, payment | Postgres connections per pod: pods × pool against the server's `max_connections` (topic 17) |
 | `--rush-hour`, `--drivers`, `--riders` | simulator | load |
 | `service.headless` + `PRICING_ADDR=dns:///…` | chart + rider-api | gRPC balancing (16.3) |
 

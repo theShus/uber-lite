@@ -45,7 +45,7 @@ Both are needed. The first protects against duplicate events, the second against
 | `PSP_FAILURE_RATE` | `0.02` | share of provider calls that fail |
 | `PSP_LATENCY_MS` | `150` | mean provider latency (±30%) |
 | `PSP_MAX_ATTEMPTS` | `3` | attempts before a payment is `failed` |
-| `DB_POOL_MAX` | `10` | |
+| `DB_POOL_MAX`, `DB_POOL_MIN` | `10`, `1` | Postgres connections per pod: at most, and kept open from startup (rider-api's README) |
 | consumer and producer knobs | | see location-service's and driver-api's READMEs |
 | `LOG_LEVEL`, `SHUTDOWN_DELAY_SECONDS`, `OTEL_EXPORTER_OTLP_ENDPOINT` | | as everywhere |
 

@@ -61,3 +61,14 @@ def test_applies_every_migration_in_order_under_the_lock(conn, capsys):
 def test_a_second_run_applies_nothing(conn):
     db.migrate(MIGRATIONS)
     assert db.migrate(MIGRATIONS) == 0
+
+
+def test_pool_sizes_come_from_the_environment(monkeypatch):
+    monkeypatch.delenv("DB_POOL_MIN", raising=False)
+    monkeypatch.delenv("DB_POOL_MAX", raising=False)
+    assert db.pool_sizes() == {"min_size": 1, "max_size": 10}
+    monkeypatch.setenv("DB_POOL_MIN", "4")
+    monkeypatch.setenv("DB_POOL_MAX", "8")
+    assert db.pool_sizes() == {"min_size": 4, "max_size": 8}
+    monkeypatch.setenv("DB_POOL_MIN", "20")  # more than the max: clamped, the pool would refuse it
+    assert db.pool_sizes() == {"min_size": 8, "max_size": 8}

@@ -55,7 +55,7 @@ At startup trip-service makes sure these exist (idempotently):
 | `DATABASE_URL`, `KAFKA_BOOTSTRAP`, `NATS_URL` | (required) | |
 | `TRIP_DURATION_S` | `20` | how long a simulated drive takes. Keep matching's `BUSY_TTL_SECONDS` above it |
 | `COMPLETION_POLL_SECONDS` | `1` | how often the scheduler looks for due trips |
-| `DB_POOL_MAX` | `10` | Postgres connections per pod |
+| `DB_POOL_MAX`, `DB_POOL_MIN` | `10`, `1` | Postgres connections per pod: at most, and kept open from startup (rider-api's README) |
 | consumer and producer knobs | | see location-service's and driver-api's READMEs |
 | `LOG_LEVEL`, `SHUTDOWN_DELAY_SECONDS`, `OTEL_EXPORTER_OTLP_ENDPOINT` | | as everywhere |
 

@@ -51,6 +51,7 @@ curl -s -X POST localhost:8080/rides -H 'content-type: application/json' \
 | `KAFKA_BOOTSTRAP` | (required) | |
 | `PRICING_ADDR` | (required) | `pricing-service:50051` (one connection through the ClusterIP), or `dns:///pricing-service-headless.uber-lite.svc.cluster.local:50051` (round-robin across pods, 16.3) |
 | `DB_POOL_MAX` | `10` | Postgres connections per pod. Pods × this must stay below the server's `max_connections` (topic 17) |
+| `DB_POOL_MIN` | `1` | connections each pod opens at startup and keeps open (clamped to `DB_POOL_MAX`) |
 | `KAFKA_ACKS`, `KAFKA_LINGER_MS`, `KAFKA_COMPRESSION` | `all`, `5`, `lz4` | producer settings (topic 20) |
 | `LOG_LEVEL` | `INFO` | |
 | `SHUTDOWN_DELAY_SECONDS` | `0` | keep serving this long after SIGTERM |

@@ -15,7 +15,7 @@ from .core.health import Health, health_router
 from .core.lifecycle import install_shutdown_hook
 from .core.logging import setup_logging
 from .core.metrics import RequestMetricsMiddleware
-from .core.tracing import setup_tracing, shutdown_tracing
+from .core.tracing import FASTAPI_TELEMETRY, setup_tracing, shutdown_tracing
 
 SERVICE = "notification-service"
 log = setup_logging(SERVICE)
@@ -49,7 +49,7 @@ def create_app(start_consumer: bool = True) -> FastAPI:
             shutdown_tracing()
             log.info("stopped")
 
-    app = FastAPI(title=SERVICE, lifespan=lifespan)
+    app = FastAPI(title=SERVICE, lifespan=lifespan, telemetry=FASTAPI_TELEMETRY)
     app.add_middleware(RequestMetricsMiddleware)
     app.include_router(health_router(health))
     app.state.health = health

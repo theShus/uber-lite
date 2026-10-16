@@ -14,6 +14,10 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
+# FastAPI 0.143 traces requests itself as soon as a tracer provider exists. FastAPIInstrumentor already does
+# that (and skips the probes), so FastAPI's own telemetry stays off: one server span per request, not two.
+FASTAPI_TELEMETRY = {"tracing": False, "metrics": False, "logs": False}
+
 
 def setup_tracing(service: str) -> bool:
     if not os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):

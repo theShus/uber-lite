@@ -1,0 +1,29 @@
+# Terraform: state can contain secrets, so it never goes in Git
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+# (do NOT ignore .terraform.lock.hcl: it pins provider versions and must be committed)
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Secrets and local config
+.env
+*.env
+!.env.example
+*.pem
+*.key
+*.csv
+kubeconfig*
+*.kubeconfig
+
+# Editors / OS
+.idea/
+.DS_Store
+infra/terraform/backend.hcl
+*.swp

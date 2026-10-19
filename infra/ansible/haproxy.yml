@@ -1,0 +1,39 @@
+- name: Configure HAProxy as the lab load balancer
+  hosts: lab
+  become: true
+  vars:
+    haproxy_port: 8080
+    haproxy_server_timeout: 2s
+    haproxy_backends:
+      - { name: a, address: "127.0.0.1:9001" }
+      - { name: b, address: "127.0.0.1:9002" }
+
+  tasks:
+    - name: Install HAProxy
+      ansible.builtin.apt:
+        name: haproxy
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Write the HAProxy config
+      ansible.builtin.template:
+        src: templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+        owner: root
+        group: root
+        mode: "0644"
+        validate: haproxy -c -f %s
+      notify: Reload haproxy
+
+    - name: HAProxy is running and enabled
+      ansible.builtin.service:
+        name: haproxy
+        state: started
+        enabled: true
+
+  handlers:
+    - name: Reload haproxy
+      ansible.builtin.service:
+        name: haproxy
+        state: reloaded

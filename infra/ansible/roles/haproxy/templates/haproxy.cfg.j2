@@ -1,0 +1,18 @@
+# Managed by Ansible - manual edits will be overwritten
+global
+    log stdout format raw local0
+defaults
+    mode http
+    log global
+    option httplog
+    timeout connect 2s
+    timeout client  10s
+    timeout server  {{ haproxy_server_timeout }}
+frontend web
+    bind :{{ haproxy_port }}
+    default_backend app
+backend app
+    balance roundrobin
+{% for b in haproxy_backends %}
+    server {{ b.name }} {{ b.address }} check inter 1s fall 2 rise 2
+{% endfor %}

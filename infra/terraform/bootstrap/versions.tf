@@ -6,6 +6,6 @@ terraform {
 
   backend "s3" {
     key          = "bootstrap/terraform.tfstate"
-    use_lockfile = true      # S3-native locking (Terraform ≥ 1.10); no DynamoDB table
+    use_lockfile = true # S3-native locking (Terraform ≥ 1.10); no DynamoDB table
   }
 }

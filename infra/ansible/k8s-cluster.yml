@@ -1,0 +1,77 @@
+- name: Prepare every node
+  hosts: k8s
+  become: true
+  roles:
+    - k8s-node
+
+- name: Initialise the control plane
+  hosts: control_plane
+  become: true
+  vars:
+    kubeconfig: /etc/kubernetes/admin.conf
+  tasks:
+    - name: kubeadm config
+      ansible.builtin.template:
+        src: templates/kubeadm-config.yaml.j2
+        dest: /etc/kubernetes/kubeadm-config.yaml
+        mode: "0644"
+
+    - name: kubeadm init (runs only once)
+      ansible.builtin.command: kubeadm init --config /etc/kubernetes/kubeadm-config.yaml
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: .kube folder for {{ ansible_user }}
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        mode: "0700"
+
+    - name: kubeconfig for {{ ansible_user }}
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_user }}"
+        mode: "0600"
+
+    - name: Calico operator CRDs and operator
+      ansible.builtin.command: >
+        kubectl --kubeconfig {{ kubeconfig }} create
+        -f https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/{{ item }}
+      loop: [operator-crds.yaml, tigera-operator.yaml]
+      register: calico_create
+      changed_when: calico_create.rc == 0
+      failed_when: calico_create.rc != 0 and 'AlreadyExists' not in calico_create.stderr
+
+    - name: Calico installation config (pod CIDR = kubeadm podSubnet)
+      ansible.builtin.template:
+        src: templates/calico-installation.yaml.j2
+        dest: /etc/kubernetes/calico-installation.yaml
+        mode: "0644"
+
+    - name: Apply the Calico installation
+      ansible.builtin.command: kubectl --kubeconfig {{ kubeconfig }} apply -f /etc/kubernetes/calico-installation.yaml
+      register: calico_apply
+      changed_when: "'configured' in calico_apply.stdout or 'created' in calico_apply.stdout"
+
+    - name: Join command for the workers
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: join_cmd
+      changed_when: false
+
+    - name: Copy the admin kubeconfig to the hub (used in §5)
+      ansible.builtin.fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ lookup('ansible.builtin.env', 'HOME') }}/.kube/kubeadm-lab.yaml"
+        flat: true
+
+- name: Join the workers
+  hosts: workers
+  become: true
+  tasks:
+    - name: kubeadm join (runs only once)
+      ansible.builtin.command: "{{ hostvars[groups['control_plane'][0]].join_cmd.stdout }}"
+      args:
+        creates: /etc/kubernetes/kubelet.conf

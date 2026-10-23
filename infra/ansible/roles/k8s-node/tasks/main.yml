@@ -1,0 +1,120 @@
+#BLOK 1, PODESAVANJE NODOVA
+
+- name: Architecture name for apt (amd64/arm64)
+  ansible.builtin.set_fact:
+    deb_arch: "{{ 'arm64' if ansible_architecture == 'aarch64' else 'amd64' }}"
+
+- name: Turn swap off now (the kubelet refuses to run with swap by default)
+  ansible.builtin.command: swapoff -a
+  when: ansible_swaptotal_mb | int > 0
+  changed_when: true
+
+- name: Keep swap off after reboot
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#].*\sswap\s.*)$'
+    replace: '# \1'
+
+
+#BLOK 2
+
+- name: Kernel modules for container networking (overlay filesystem, bridge netfilter)
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+    persistent: present
+  loop: [overlay, br_netfilter]
+
+- name: Kernel settings - bridged traffic through iptables, IP forwarding
+  ansible.posix.sysctl:
+    name: "{{ item }}"
+    value: "1"
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+    reload: true
+  loop:
+    - net.bridge.bridge-nf-call-iptables
+    - net.bridge.bridge-nf-call-ip6tables
+    - net.ipv4.ip_forward
+
+
+#BLOK 3 CONTAINERED
+
+- name: Base packages
+  ansible.builtin.apt:
+    name: [ca-certificates, curl, gpg, jq, socat, conntrack]
+    state: present
+    update_cache: true
+
+- name: Docker's apt key (its repo ships containerd 2.x; Kubernetes >= 1.36 needs containerd >= 2.0)
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+
+- name: Docker's apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch={{ deb_arch }} signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    filename: docker
+    state: present
+
+- name: containerd
+  ansible.builtin.apt:
+    name: containerd.io
+    state: present
+    update_cache: true
+
+- name: Is containerd already configured for Kubernetes?
+  ansible.builtin.command: grep -q 'SystemdCgroup = true' /etc/containerd/config.toml
+  register: containerd_cfg
+  changed_when: false
+  failed_when: false
+
+- name: Default containerd config (Docker's package disables the CRI plugin) + systemd cgroups
+  ansible.builtin.shell: |
+    containerd config default > /etc/containerd/config.toml
+    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/' /etc/containerd/config.toml
+  when: containerd_cfg.rc != 0
+  changed_when: true
+  notify: Restart containerd
+
+#BLOK 4 KUBERENETES PAKETI
+
+- name: Kubernetes apt key for this minor version
+  ansible.builtin.shell: >
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/Release.key
+    | gpg --dearmor -o /etc/apt/keyrings/kubernetes-v{{ k8s_minor }}.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-v{{ k8s_minor }}.gpg
+
+- name: Kubernetes apt repository (one repo per minor version)
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: "deb [signed-by=/etc/apt/keyrings/kubernetes-v{{ k8s_minor }}.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_minor }}/deb/ /\n"
+    mode: "0644"
+
+- name: kubelet, kubeadm, kubectl at the pinned version
+  ansible.builtin.apt:
+    name:
+      - "kubelet={{ k8s_patch }}-*"
+      - "kubeadm={{ k8s_patch }}-*"
+      - "kubectl={{ k8s_patch }}-*"
+    state: present
+    update_cache: true
+    allow_change_held_packages: true
+
+- name: Hold them (no accidental upgrades by apt upgrade)
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: [kubelet, kubeadm, kubectl]
+
+- name: crictl talks to containerd
+  ansible.builtin.copy:
+    dest: /etc/crictl.yaml
+    content: "runtime-endpoint: unix:///run/containerd/containerd.sock\n"
+    mode: "0644"
+
+- name: kubelet enabled (it restarts in a loop until kubeadm configures it, which is expected)
+  ansible.builtin.service:
+    name: kubelet
+    enabled: true

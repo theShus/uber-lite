@@ -1,0 +1,10 @@
+k8s_minor: "1.36"                 # apt repo per minor version
+k8s_patch: "1.36.5"               # check: curl -s https://dl.k8s.io/release/stable-1.36.txt
+cluster_name: kubeadm-lab         # becomes the cluster's name in the kubeconfig
+pod_cidr: 10.244.0.0/16           # must not overlap the VPC (10.0.0.0/16)
+service_cidr: 10.96.0.0/16
+cp_host: "{{ groups['control_plane'][0] }}"
+control_plane_endpoint: "{{ hostvars[cp_host].private_ip }}:6443"
+api_cert_sans: ["{{ hostvars[cp_host].ansible_host }}"]   # cp1's public IP, so kubectl on the hub can verify the certificate
+calico_version: v3.33.0           # check https://github.com/projectcalico/calico/releases
+calico_encapsulation: VXLAN       # always encapsulate: EC2 drops packets that carry pod IPs (08.3 §1)

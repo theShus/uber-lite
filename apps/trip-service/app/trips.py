@@ -11,6 +11,8 @@ from prometheus_client import Counter
 from .core.kafka import PoisonMessage
 
 COMPLETED_TOPIC = "trip.completed"
+NOTIFY_TOPIC = "notification.requested"
+NOTIFY_TIMEOUT_S = 5.0
 
 log = logging.getLogger("trips")
 
@@ -21,10 +23,9 @@ NOTIFY_FAILURES = Counter("trip_notifications_failed_total", "Notifications that
 
 
 class TripService:
-    def __init__(self, store, producer, notifier, duration_s: float = 20.0, poll_s: float = 1.0):
+    def __init__(self, store, producer, duration_s: float = 20.0, poll_s: float = 1.0):
         self.store = store
         self.producer = producer
-        self.notifier = notifier
         self.duration_s = duration_s
         self.poll_s = poll_s
         self._stop = asyncio.Event()
@@ -48,16 +49,22 @@ class TripService:
             return
         TRIPS_STARTED.inc()
         log.info("trip started", extra={"ride_id": trip["ride_id"], "driver_id": trip["driver_id"]})
-        await self.notify(f"notify.rider.{trip['rider_id']}", trip["ride_id"], "Your driver is on the way")
-        await self.notify(f"notify.driver.{trip['driver_id']}", trip["ride_id"], "New ride: head to the pickup")
+        await self.notify("rider", trip["rider_id"], trip["ride_id"], "Your driver is on the way")
+        await self.notify("driver", trip["driver_id"], trip["ride_id"], "New ride: head to the pickup")
 
-    async def notify(self, subject: str, ride_id: str, message: str) -> None:
-        """Best effort: a lost notification mustn't stall the trip pipeline."""
+    async def notify(self, kind: str, target: str, ride_id: str, message: str) -> None:
+        """Best effort: a lost notification mustn't stall the trip pipeline.
+
+        One event on notification.requested, keyed <kind>:<id>: one recipient's notifications share a
+        partition, so they arrive in order, and a rider and a driver with the same id don't collide.
+        """
+        key = f"{kind}:{target}"
+        event = {"kind": kind, "target": target, "ride_id": ride_id, "message": message}
         try:
-            await self.notifier.publish(subject, {"ride_id": ride_id, "message": message})
+            await self.producer.send(NOTIFY_TOPIC, key, event, timeout=NOTIFY_TIMEOUT_S)  # waits for Kafka's ack
         except Exception as exc:
             NOTIFY_FAILURES.inc()
-            log.warning("notification not published", extra={"subject": subject, "ride_id": ride_id, "error": str(exc)})
+            log.warning("notification not published", extra={"key": key, "ride_id": ride_id, "error": str(exc)})
 
     # ---- the completion scheduler ----
     async def run_scheduler(self) -> None:
@@ -95,7 +102,7 @@ class TripService:
             TRIPS_COMPLETED.inc()
             log.info("trip completed", extra={"ride_id": t["ride_id"], "amount_cents": t["amount_cents"]})
             euros = f"{t['amount_cents'] / 100:.2f} {t['currency']}"
-            await self.notify(f"notify.rider.{t['rider_id']}", t["ride_id"], f"Trip completed: {euros}")
+            await self.notify("rider", t["rider_id"], t["ride_id"], f"Trip completed: {euros}")
         return len(done)
 
     def stop(self) -> None:

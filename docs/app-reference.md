@@ -12,9 +12,9 @@ The Python services in `apps/`, in one place: who talks to whom, every topic, ke
 | location-service | Kafka consumer | 8080 (health) | `driver.locations` | | Valkey `drivers:geo`, `driver:last_seen:*` |
 | matching-service | Kafka consumer | 8080 (health) | `ride.requested` | `ride.matched` | Valkey `busy:*`, `matched:*` |
 | pricing-service | internal gRPC | **50051** gRPC, 8080 (health) | | | Valkey `demand:cell:*:*` (reads `drivers:geo`) |
-| trip-service | REST + consumer | 8080 | `ride.matched` | `trip.completed`, NATS `notify.*` | Postgres `trips` |
+| trip-service | REST + consumer | 8080 | `ride.matched` | `trip.completed`, `notification.requested` | Postgres `trips` |
 | payment-service | Kafka consumer | 8080 (health) | `trip.completed` | `payment.settled` | Postgres `payments` |
-| notification-service | NATS consumer | 8080 (health) | NATS `notify.>` | | |
+| notification-service | Kafka consumer | 8080 (health) | `notification.requested` | | |
 | simulator | CLI / Job | none | | HTTP → rider-api, driver-api | |
 
 ```mermaid
@@ -34,8 +34,8 @@ flowchart LR
   trip -->|"trip.completed"| k
   k --> payment["payment-service"]
   payment -->|"payment.settled"| k
-  trip -->|"notify.rider/driver.*"| n[("NATS JetStream<br/>stream NOTIFY")]
-  n --> notify["notification-service"]
+  trip -->|"notification.requested"| k
+  k --> notify["notification-service"]
   rider --- pg[("Postgres<br/>rides · trips · payments")]
   trip --- pg
   payment --- pg
@@ -50,7 +50,7 @@ flowchart LR
 | Logs | JSON lines on stdout: `ts`, `level`, `service`, `msg`, plus fields (`ride_id`, `driver_id`…), and `trace_id` when tracing is on. One `"msg": "request"` line per HTTP request, except probes and `/metrics` |
 | Shutdown | SIGTERM → `/readyz` 503 → in-flight work finishes → consumers commit and leave their group → producers flush → exit within 20 s |
 | Config | environment variables only |
-| Delivery | Kafka: at-least-once everywhere. Offsets are stored after processing; a failing message is retried (seek back, backoff); a poison message is logged and skipped. **Every consumer is idempotent:** on `ride_id` for matching, trip and payment; location-service's GEOADD simply overwrites |
+| Delivery | Kafka: at-least-once everywhere. Offsets are stored after processing; a failing message is retried (seek back, backoff); a poison message is logged and skipped. **Every consumer is idempotent or harmless when repeated:** on `ride_id` for matching, trip and payment; location-service's GEOADD simply overwrites; notification-service may send the same push twice |
 | Python | 3.13. All dependencies pinned, with wheels for linux/amd64 and linux/arm64 |
 
 ## Kafka
@@ -61,6 +61,7 @@ flowchart LR
 | `ride.matched` | 6 | ride_id | matching-service | `trip-service` |
 | `trip.completed` | 6 | ride_id | trip-service (scheduler) | `payment-service` |
 | `payment.settled` | 3 | ride_id | payment-service | (none yet) |
+| `notification.requested` | 6 | `<kind>:<id>` (`rider:r1`, `driver:d7`) | trip-service (best effort) | `notification-service` |
 
 Topics must exist beforehand: the services don't create them, and readiness reports any that are missing.
 
@@ -73,21 +74,15 @@ Topics must exist beforehand: the services don't create them, and readiness repo
 | `matched:<ride_id>` | string = driver_id | matching | matching (redeliveries) | 1 h |
 | `demand:cell:<i>:<j>` | counter (one per 0.05° grid cell: `floor(lat/0.05)`, `floor(lon/0.05)`) | pricing | pricing | 300 s window |
 
-## NATS JetStream
-- stream **`NOTIFY`**: subjects `notify.>`, file storage, 24 h retention
-- durable pull consumer **`notification-service`**: explicit ack, ack wait 30 s, max deliver 5
-- **both** trip-service and notification-service declare them, so KEDA can scale notification-service from zero
-
 ## Postgres
 One server, a database and a user per service (database per service): `rides`, `trips`, `payments`. Tables are in each service's `app/migrations.py`. Each service connects only to its own database (`DATABASE_URL`).
 
 ## Environment variables
 | Variable | Used by | Example / default |
 |---|---|---|
-| `KAFKA_BOOTSTRAP` | rider, driver, location, matching, trip, payment | `kafka:9092` |
+| `KAFKA_BOOTSTRAP` | rider, driver, location, matching, trip, payment, notification | `kafka:9092` |
 | `DATABASE_URL` | rider, trip, payment | `postgresql://rides:rides@postgres:5432/rides` |
 | `VALKEY_URL` | location, matching, pricing | `redis://valkey:6379/0` |
-| `NATS_URL` | trip, notification | `nats://nats:4222` |
 | `PRICING_ADDR` | rider-api | `pricing-service:50051`, or `dns:///pricing-service-headless…:50051` |
 | `RIDER_API`, `DRIVER_API`, `RIDER_API_KEY` | simulator | `http://rider-api`, `http://driver-api`, unset |
 | `LOG_LEVEL` | all | `INFO` |
@@ -108,7 +103,7 @@ One server, a database and a user per service (database per service): `rides`, `
 | `service.headless` + `PRICING_ADDR=dns:///…` | chart + rider-api | gRPC balancing (16.3) |
 
 ## Left for you on purpose
-- **Trace propagation through Kafka and NATS** (topic 19): HTTP, gRPC and database calls are traced when OTel is on, but no trace context travels inside messages, so a trace stops at each producer. Adding it (inject `traceparent` into message headers, extract it in the consumers) is your code change.
+- **Trace propagation through Kafka** (topic 19): HTTP, gRPC and database calls are traced when OTel is on, but no trace context travels inside messages, so a trace stops at each producer. Adding it (inject `traceparent` into message headers, extract it in the consumers) is your code change.
 - Dockerfiles, `.dockerignore`, Compose, manifests, the chart, CI, infrastructure, GitOps.
 
 ## Working on the code
@@ -123,6 +118,13 @@ ruff check . && ruff format --check .
 - **`app/proto/`** in pricing-service and rider-api: the gRPC contract (pricing-service's README explains how to regenerate it).
 - The tests need no containers: they use fakes and an in-memory Valkey (fakeredis). Some optional tests run against the real thing when you point them at it:
   - `PG_TEST_URL` (rider-api, trip-service, payment-service): migrations and the store SQL against a real Postgres
-  - `NATS_TEST_URL` (notification-service): the JetStream consumer against a real `nats-server -js`
+  - `KAFKA_TEST_BOOTSTRAP` (notification-service): the shared consumer loop against a real broker, with a throwaway topic and group
 
-  CI can run them with a Postgres service container (topic 13).
+  CI can run them with Postgres and Kafka service containers (topic 13).
+
+## History
+**2026-10-25: notifications moved from NATS JetStream to Kafka.** Until then trip-service published to NATS subjects `notify.rider.<id>` and `notify.driver.<id>`, a JetStream stream `NOTIFY` stored them, and notification-service pulled them through a durable consumer, which both services created so KEDA could scale notification-service from zero. Now trip-service produces `notification.requested`, and notification-service is a Kafka consumer like the others.
+
+**Why:** JetStream is technically excellent for lightweight, low-latency messaging, but a second messaging system added real infrastructure overhead (a server to deploy, monitor, secure and upgrade in every environment) without a structural advantage here. Kafka already gives at-least-once delivery, consumers that are idempotent or harmless when repeated, ordering per key, and lag that KEDA can scale from zero. **The trade-off accepted:** a notification that keeps failing holds up the ones behind it on its partition, where JetStream retried each message on its own. Notifications have no slow dependency to fail, and a malformed one is skipped as poison. A retry or dead-letter topic is the fix if that changes.
+
+The NATS design is still described in the guides (topic 10.3), as the "when would you not use Kafka?" comparison.

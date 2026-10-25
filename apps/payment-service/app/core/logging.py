@@ -53,6 +53,6 @@ def setup_logging(service: str) -> logging.Logger:
         logging.getLogger(name).handlers[:] = []
         logging.getLogger(name).propagate = True
     logging.getLogger("uvicorn.access").disabled = True
-    for noisy in ("httpx", "httpcore", "nats"):
+    for noisy in ("httpx", "httpcore"):
         logging.getLogger(noisy).setLevel(logging.WARNING)
     return logging.getLogger(service)

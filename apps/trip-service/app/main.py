@@ -1,7 +1,7 @@
 """trip-service: REST + consumer.
 
-Kafka ride.matched (group trip-service) → a started trip in Postgres → NATS "driver on the way"
-a scheduler: due trips → Kafka trip.completed → NATS "trip completed"
+Kafka ride.matched (group trip-service) → a started trip in Postgres → notification.requested "driver on the way"
+a scheduler: due trips → Kafka trip.completed → notification.requested "trip completed"
 GET /trips/{ride_id}
 
 Run: uvicorn app.main:app --host 0.0.0.0 --port 8080
@@ -13,13 +13,13 @@ import uuid
 
 from fastapi import FastAPI, HTTPException
 
-from .core.config import env_float, env_str
+from .core.config import env_float
 from .core.health import Health, health_router
 from .core.lifecycle import install_shutdown_hook
 from .core.logging import setup_logging
 from .core.metrics import RequestMetricsMiddleware
 from .core.tracing import FASTAPI_TELEMETRY, setup_tracing, shutdown_tracing
-from .trips import COMPLETED_TOPIC, TripService
+from .trips import COMPLETED_TOPIC, NOTIFY_TOPIC, TripService
 
 SERVICE = "trip-service"
 IN_TOPIC = "ride.matched"
@@ -27,7 +27,7 @@ GROUP = "trip-service"
 log = setup_logging(SERVICE)
 
 
-def create_app(store=None, producer=None, notifier=None, start_consumer: bool = True) -> FastAPI:
+def create_app(store=None, producer=None, start_consumer: bool = True) -> FastAPI:
     health = Health()
     deps: dict = {}
 
@@ -49,36 +49,27 @@ def create_app(store=None, producer=None, notifier=None, start_consumer: bool = 
             deps["producer"] = KafkaProducer(SERVICE)
         else:
             deps["producer"] = producer
-        if notifier is None:
-            from .notifier import NatsNotifier
-
-            deps["notifier"] = NatsNotifier(env_str("NATS_URL"), SERVICE)
-            deps["notifier"].start()
-        else:
-            deps["notifier"] = notifier
 
         trips = TripService(
             deps["store"],
             deps["producer"],
-            deps["notifier"],
             duration_s=env_float("TRIP_DURATION_S", 20),
             poll_s=env_float("COMPLETION_POLL_SECONDS", 1),
         )
         deps["trips"] = trips
         health.add_check("postgres", deps["store"].check)
-        health.add_check("nats", deps["notifier"].check)
 
         worker = None
         if start_consumer:
             from .core.kafka import ConsumerWorker, readiness_check
 
             def handle(event, _msg):
-                # The consumer thread hands each message to the event loop (one DB pool, one NATS
-                # connection) and waits: an exception here means "retry this message".
+                # The consumer thread hands each message to the event loop (one DB pool, one Kafka
+                # producer) and waits: an exception here means "retry this message".
                 asyncio.run_coroutine_threadsafe(trips.on_ride_matched(event), loop).result(timeout=30)
 
             worker = ConsumerWorker(SERVICE, GROUP, IN_TOPIC, handle)
-            health.add_blocking_check("kafka", readiness_check(SERVICE, [IN_TOPIC, COMPLETED_TOPIC]))
+            health.add_blocking_check("kafka", readiness_check(SERVICE, [IN_TOPIC, COMPLETED_TOPIC, NOTIFY_TOPIC]))
             health.add_check("consumer", worker.alive_check)
             worker.start()
         scheduler = asyncio.create_task(trips.run_scheduler())
@@ -93,7 +84,6 @@ def create_app(store=None, producer=None, notifier=None, start_consumer: bool = 
             trips.stop()
             await scheduler
             deps["producer"].close()
-            await deps["notifier"].close()
             await deps["store"].close()
             shutdown_tracing()
             log.info("stopped")

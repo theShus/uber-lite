@@ -2,8 +2,8 @@
 
 Spans are exported with OTLP over HTTP (a collector's port 4318). Each service's
 main.py instruments its HTTP server and clients, gRPC, Postgres and Valkey calls.
-Context is NOT propagated through Kafka or NATS messages yet. Adding that is your
-change in topic 19; until then a trace ends at the producer.
+Context is NOT propagated through Kafka messages yet. Adding that is your change
+in topic 19; until then a trace ends at the producer.
 """
 
 import os

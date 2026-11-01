@@ -1,0 +1,20 @@
+# service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: pricing-service
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pricing-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+    - name: grpc
+      port: 50051
+      targetPort: grpc
+      appProtocol: kubernetes.io/h2c             # HTTP/2 without TLS: how gateways recognise gRPC (Stage 6)

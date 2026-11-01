@@ -1,0 +1,14 @@
+# pdb.yaml
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: pricing-service
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  maxUnavailable: 1                              # a drain may take one pod at a time
+  unhealthyPodEvictionPolicy: AlwaysAllow        # broken pods never block a drain
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pricing-service

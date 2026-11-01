@@ -1,0 +1,96 @@
+# deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pricing-service
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  # no replicas: the HPA owns the count
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0                          # never fewer ready pods than wanted during a rollout
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pricing-service    # immutable: stable labels only
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pricing-service
+        app.kubernetes.io/part-of: uber-lite
+    spec:
+      serviceAccountName: pricing-service
+      automountServiceAccountToken: false
+      terminationGracePeriodSeconds: 30          # covers the 5 s preStop and the app's 20 s drain
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001                         # the user in your Dockerfile (09.2)
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pricing-service
+          matchLabelKeys: ["pod-template-hash"]  # spread each ReplicaSet on its own, not old + new together
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: pricing-service
+          matchLabelKeys: ["pod-template-hash"]
+      containers:
+        - name: app
+          image: pricing-service:dev
+          imagePullPolicy: IfNotPresent            # the image only exists inside kind
+          ports:
+            - name: http
+              containerPort: 8080                  # health, readiness, metrics
+            - name: grpc
+              containerPort: 50051                 # the Quote API
+          envFrom:
+            - configMapRef:
+                name: pricing-service
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              memory: 96Mi                         # no CPU limit: throttling hurts latency (11.6)
+          startupProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 2
+            failureThreshold: 15                   # up to 30 s to start before liveness takes over
+          readinessProbe:
+            httpGet: {path: /readyz, port: http}   # checks Valkey: no Valkey, no traffic
+            periodSeconds: 5
+            failureThreshold: 2
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}  # never checks dependencies
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5                         # keep serving while the endpoint is removed (11.3)
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi

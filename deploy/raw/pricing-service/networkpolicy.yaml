@@ -1,0 +1,53 @@
+# networkpolicy.yaml
+# pricing-service's own rules. The namespace's default-deny and allow-dns come from Stage 1.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: pricing-service
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: pricing-service
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: rider-api
+      ports:
+        - {port: grpc, protocol: TCP}
+  egress:
+    - to:
+        - namespaceSelector:                     # one element: Valkey pods IN the data namespace (AND)
+            matchLabels:
+              kubernetes.io/metadata.name: data
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: valkey
+      ports:
+        - {port: 6379, protocol: TCP}
+---
+# The caller's side: rider-api may reach pricing. It belongs to rider-api, but it lives here until
+# rider-api has its own release (Stage 4): under default-deny, both directions must be allowed.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: rider-api-to-pricing
+  labels:
+    app.kubernetes.io/name: rider-api
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: rider-api
+  policyTypes: [Egress]
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: pricing-service
+      ports:
+        - {port: 50051, protocol: TCP}

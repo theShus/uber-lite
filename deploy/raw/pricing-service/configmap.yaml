@@ -1,0 +1,11 @@
+# configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pricing-service
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/part-of: uber-lite
+data:
+  LOG_LEVEL: "INFO"
+  VALKEY_URL: "redis://valkey.data:6379/0"   # Valkey lives in the data namespace (Stage 1)

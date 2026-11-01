@@ -5,6 +5,6 @@ resources:
   - kafka.yaml
   - kafka-topics.yaml
   - postgres.yaml
-  - valkey/satefulset.yaml
+  - valkey/statefulset.yaml
   - valkey/service.yaml
   - valkey/networkpolicy.yaml

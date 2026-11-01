@@ -1,0 +1,17 @@
+# rider-api: the same in every environment
+image:
+  repository: rider-api
+env:
+  LOG_LEVEL: INFO
+  PRICING_ADDR: pricing-service:50051
+secretEnv:
+  DATABASE_URL: {secretName: rider-api-db, key: url}
+migration:
+  enabled: true
+networkPolicy:
+  allowFrom:
+    - {podName: simulator, port: http}
+  allowTo:
+    - {podName: pricing-service, port: 50051}
+    - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+    - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}

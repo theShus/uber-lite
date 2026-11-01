@@ -1,0 +1,8 @@
+# notification-service: the same in every environment
+image:
+  repository: notification-service
+env:
+  LOG_LEVEL: INFO
+networkPolicy:
+  allowTo:
+    - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}

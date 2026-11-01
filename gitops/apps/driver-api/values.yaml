@@ -1,0 +1,10 @@
+# driver-api: the same in every environment
+image:
+  repository: driver-api
+env:
+  LOG_LEVEL: INFO
+networkPolicy:
+  allowFrom:
+    - {podName: simulator, port: http}
+  allowTo:
+    - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}

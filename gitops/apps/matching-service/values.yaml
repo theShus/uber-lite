@@ -1,0 +1,9 @@
+# matching-service: the same in every environment
+image:
+  repository: matching-service
+env:
+  LOG_LEVEL: INFO
+networkPolicy:
+  allowTo:
+    - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+    - {namespace: data, podName: valkey, port: 6379}

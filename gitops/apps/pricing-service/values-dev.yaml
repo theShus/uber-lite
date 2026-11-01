@@ -1,0 +1,7 @@
+# pricing-service: dev (kind on the hub)
+image:
+  tag: dev
+env:
+  VALKEY_URL: redis://valkey.data:6379/0
+autoscaling:
+  minReplicas: 1

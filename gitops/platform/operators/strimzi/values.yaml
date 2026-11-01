@@ -1,0 +1,3 @@
+# Strimzi operator 1.3.0: watch only the data namespace
+watchNamespaces: [data] #gledas data namespace koji smo napravili ranije
+                        #morali smo ranije da ga napravimo jer on ce sada neki ResourceBinding da naprvi u NS

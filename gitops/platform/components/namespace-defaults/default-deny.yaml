@@ -1,0 +1,9 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  podSelector: {} # empty so it selects all pods in its namespace.
+  policyTypes: [Ingress, Egress] #NetPolicy je add allow, i stacking, kada stavis intress i egress bez icega rekao si evo pravilo gde ne dozvoljavam nista.

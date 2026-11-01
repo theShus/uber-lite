@@ -1,0 +1,77 @@
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: driver.locations
+  labels:
+    strimzi.io/cluster: kafka
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  partitions: 12
+  replicas: 1
+  config:
+    retention.ms: 86400000
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: ride.requested
+  labels:
+    strimzi.io/cluster: kafka
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  partitions: 6
+  replicas: 1
+  config:
+    retention.ms: 86400000
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: ride.matched
+  labels:
+    strimzi.io/cluster: kafka
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  partitions: 6
+  replicas: 1
+  config:
+    retention.ms: 86400000
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: trip.completed
+  labels:
+    strimzi.io/cluster: kafka
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  partitions: 6
+  replicas: 1
+  config:
+    retention.ms: 86400000
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: payment.settled
+  labels:
+    strimzi.io/cluster: kafka
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  partitions: 3
+  replicas: 1
+  config:
+    retention.ms: 86400000
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: notification.requested
+  labels:
+    strimzi.io/cluster: kafka
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  partitions: 6
+  replicas: 1
+  config:
+    retention.ms: 86400000

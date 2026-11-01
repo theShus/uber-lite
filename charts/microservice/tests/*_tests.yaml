@@ -1,0 +1,12 @@
+suite: deployment                 # ime grupe testova
+templates:                        # koje template-e renderuje
+  - deployment.yaml
+  - configmap.yaml                # treba zbog checksum-a, koji include-uje configmap
+set:                              # values za SVE testove u suite-u
+  image.repository: example/app
+tests:
+  - it: leaves replicas to the HPA when autoscaling is on     # opis testa
+    template: deployment.yaml                                 # koji template proverava
+    asserts:                                                   # šta mora da važi
+      - notExists:
+          path: spec.replicas

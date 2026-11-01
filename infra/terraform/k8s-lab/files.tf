@@ -24,7 +24,7 @@ resource "local_file" "inventory" {
     ansible_user=ubuntu
     ansible_ssh_common_args='-o UserKnownHostsFile=~/.ssh/known_hosts.k8s-lab -o StrictHostKeyChecking=accept-new'
   EOT
-  
+
 }
 
 resource "local_file" "ssh_config" {

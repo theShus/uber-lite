@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
@@ -13,42 +12,10 @@ concurrency:
 
 jobs:
   changes:
-    runs-on: ubuntu-24.04
-    outputs:
-      services: ${{ steps.services.outputs.list }}
-      chart: ${{ steps.filter.outputs.chart }}
-      terraform: ${{ steps.filter.outputs.terraform }}
-      ci: ${{ steps.filter.outputs.ci }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - id: filter
-        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
-        with:
-          filters: |
-            rider-api: ['apps/rider-api/**']
-            driver-api: ['apps/driver-api/**']
-            location-service: ['apps/location-service/**']
-            matching-service: ['apps/matching-service/**']
-            pricing-service: ['apps/pricing-service/**']
-            trip-service: ['apps/trip-service/**']
-            payment-service: ['apps/payment-service/**']
-            notification-service: ['apps/notification-service/**']
-            simulator: ['apps/simulator/**']
-            ci: ['.github/**', 'tools/**']
-            chart: ['charts/**', 'gitops/apps/**']
-            terraform: ['infra/terraform/**']
-      - id: services
-        env:
-          CHANGED: ${{ steps.filter.outputs.changes }}   # JSON list of the filters that matched
-          CI_CHANGED: ${{ steps.filter.outputs.ci }}
-        run: |
-          if [ "$CI_CHANGED" = "true" ]; then
-            list=$(for d in apps/*/; do basename "$d"; done | jq -R . | jq -sc .)
-          else
-            list=$(echo "$CHANGED" | jq -c '[.[] | select(. != "ci" and . != "chart" and . != "terraform")]')
-          fi
-          echo "services: $list"
-          echo "list=$list" >> "$GITHUB_OUTPUT"
+    permissions:
+      contents: read
+      pull-requests: read        # paths-filter lists the PR's files through the API
+    uses: ./.github/workflows/changes.yaml
 
   lint:
     runs-on: ubuntu-24.04
@@ -97,30 +64,13 @@ jobs:
   images:
     needs: changes
     if: needs.changes.outputs.services != '[]'
-    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         service: ${{ fromJSON(needs.changes.outputs.services) }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
-      - name: build (amd64, loaded locally, not pushed)
-        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
-        with:
-          context: apps/${{ matrix.service }}
-          load: true
-          tags: ${{ matrix.service }}:pr
-          cache-from: type=gha,scope=${{ matrix.service }}
-          cache-to: type=gha,scope=${{ matrix.service }},mode=max
-      - name: scan (fail on fixable CRITICAL)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ matrix.service }}:pr
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
-          version: v0.76.0
+    uses: ./.github/workflows/build-image.yaml
+    with:
+      service: ${{ matrix.service }}
 
   chart:
     needs: changes
@@ -150,7 +100,6 @@ jobs:
       - run: terraform fmt -check -recursive infra/terraform
       - name: validate every layer
         run: |
-          # some layers read ~/.ssh/id_ed25519.pub (key pairs); CI only needs one to exist
           ssh-keygen -q -t ed25519 -N "" -f ~/.ssh/id_ed25519
           for dir in infra/terraform/*/; do
             ls "$dir"*.tf >/dev/null 2>&1 || continue
@@ -161,14 +110,13 @@ jobs:
       - name: tflint
         working-directory: infra/terraform
         env:
-          GITHUB_TOKEN: ${{ github.token }}   # tflint --init downloads the AWS ruleset from GitHub
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           tflint --init --config "$PWD/.tflint.hcl"
           tflint --recursive --config "$PWD/.tflint.hcl"
       - name: trivy config
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         env:
-          # Only Terraform: modules downloaded into .terraform/ ship example YAML we don't own.
           TRIVY_MISCONFIG_SCANNERS: terraform
         with:
           scan-type: config

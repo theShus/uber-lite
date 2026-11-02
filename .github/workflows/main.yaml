@@ -1,0 +1,30 @@
+name: main
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: main
+  cancel-in-progress: false      # a half-finished push+sign must never be cancelled
+
+jobs:
+  changes:
+    uses: ./.github/workflows/changes.yaml
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    permissions:
+      contents: read
+      id-token: write            # OIDC: AWS credentials and the cosign certificate
+    uses: ./.github/workflows/build-image.yaml
+    with:
+      service: ${{ matrix.service }}
+      push: true

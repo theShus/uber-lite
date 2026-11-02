@@ -11,3 +11,13 @@ variable "services" {
     "trip-service", "payment-service", "notification-service", "simulator",
   ]
 }
+
+variable "github_owner_id" {
+  description = "Numeric ID of the repository owner (GitHub puts it in the OIDC sub claim)"
+  type        = number
+}
+
+variable "github_repository_id" {
+  description = "Numeric ID of the repository (GitHub puts it in the OIDC sub claim)"
+  type        = number
+}

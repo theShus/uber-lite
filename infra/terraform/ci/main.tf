@@ -19,7 +19,7 @@ data "aws_iam_policy_document" "push_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = [local.github_sub_main]
     }
   }
 }
@@ -82,4 +82,10 @@ resource "aws_ecr_lifecycle_policy" "svc" {
       },
     ]
   })
+}
+
+locals {
+  github_owner    = split("/", var.github_repository)[0]
+  github_repo     = split("/", var.github_repository)[1]
+  github_sub_main = "repo:${local.github_owner}@${var.github_owner_id}/${local.github_repo}@${var.github_repository_id}:ref:refs/heads/main"
 }

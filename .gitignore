@@ -27,3 +27,6 @@ kubeconfig*
 .DS_Store
 infra/terraform/backend.hcl
 *.swp
+
+# holds the account ID (bucket name) and a home IP
+infra/terraform/k8s-lab/terraform.tfvars

@@ -34,6 +34,7 @@ resource "aws_vpc_security_group_ingress_rule" "api_from_home" {
   description       = "kubectl from the hub"
 }
 
+# trivy:ignore:AWS-0104:exp:2027-01-31 -- nodes need apt and image registries (changing IPs); egress is limited per workload by NetworkPolicies
 resource "aws_vpc_security_group_egress_rule" "all" {
   security_group_id = aws_security_group.nodes.id
   cidr_ipv4         = "0.0.0.0/0"

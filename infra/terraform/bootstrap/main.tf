@@ -19,6 +19,7 @@ resource "aws_s3_bucket_versioning" "tfstate" { # ukljucuje versionning bucketa,
   versioning_configuration { status = "Enabled" }
 }
 
+# trivy:ignore:AWS-0132:exp:2027-01-31 -- SSE-S3 (AES256) is enough for a lab state bucket; a customer KMS key costs $1/month
 resource "aws_s3_bucket_server_side_encryption_configuration" "tfstate" { # ukljucujemo enkripciju buketa
   bucket = aws_s3_bucket.tfstate.id
   rule {

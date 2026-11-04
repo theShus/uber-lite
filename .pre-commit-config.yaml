@@ -13,3 +13,20 @@ repos:
     rev: v8.30.0
     hooks:
       - id: gitleaks
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [-c, .yamllint]
+  - repo: local
+    hooks:
+      - id: kubeconform
+        name: kubeconform
+        entry: kubeconform -strict -summary
+        language: system
+        files: ^deploy/raw/.*\.ya?ml$
+      - id: kube-linter
+        name: kube-linter
+        entry: kube-linter lint
+        language: system
+        files: ^deploy/raw/.*\.ya?ml$

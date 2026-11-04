@@ -5,8 +5,8 @@
     haproxy_port: 8080
     haproxy_server_timeout: 2s
     haproxy_backends:
-      - { name: a, address: "127.0.0.1:9001" }
-      - { name: b, address: "127.0.0.1:9002" }
+      - {name: a, address: "127.0.0.1:9001"}
+      - {name: b, address: "127.0.0.1:9002"}
 
   tasks:
     - name: Install HAProxy

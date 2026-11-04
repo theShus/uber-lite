@@ -1,0 +1,6 @@
+extends: default
+rules:
+  document-start: disable
+  line-length: {max: 160}
+  indentation: {spaces: 2, indent-sequences: consistent}
+  truthy: {check-keys: false}

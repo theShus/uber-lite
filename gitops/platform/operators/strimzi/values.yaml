@@ -1,0 +1,2 @@
+# strimzi opertor 1.3.0, set to watch only data namespace
+watchNamespaces: [data]

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: valkey
+  labels:
+    app.kubernetes.io/name: valkey
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  serviceName: valkey
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain                          # deleting the StatefulSet keeps the data (11.7 Task 3)
+    whenScaled: Retain
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: valkey
+        app.kubernetes.io/part-of: uber-lite
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999                           # the image's valkey user (check: docker run --rm valkey/valkey:8 id valkey)
+        runAsGroup: 999
+        fsGroup: 999                             # makes the new volume writable for that group
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: valkey
+          image: valkey/valkey:8
+          command: ["valkey-server", "--appendonly", "yes", "--dir", "/data",
+                    "--maxmemory", "200mb", "--maxmemory-policy", "noeviction"]
+          ports:
+            - {name: valkey, containerPort: 6379}
+          resources:
+            requests: {cpu: 50m, memory: 256Mi}
+            limits: {memory: 256Mi}                # maxmemory 200mb stays below it: refuse writes, don't get OOM-killed
+          readinessProbe:
+            exec: {command: ["valkey-cli", "ping"]}
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket: {port: valkey}
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: ["ALL"]}
+          volumeMounts:
+            - {name: data, mountPath: /data}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+        labels:
+          app.kubernetes.io/name: valkey
+          app.kubernetes.io/part-of: uber-lite
+      spec:
+        accessModes: ["ReadWriteOnce"]           # no storageClassName: the cluster's default (kind: standard; EKS: gp3)
+        resources:
+          requests:
+            storage: 1Gi

@@ -1,0 +1,51 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  instances: 1
+  storage:
+    size: 2Gi
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {memory: 256Mi}
+  bootstrap:
+    initdb:
+      database: rides
+      owner: rides
+      secret:
+        name: pg-rides
+  managed:
+    roles:
+      - name: trips
+        ensure: present
+        login: true
+        passwordSecret: {name: pg-trips}
+      - name: payments
+        ensure: present
+        login: true
+        passwordSecret: {name: pg-payments}
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: trips
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  cluster: {name: postgres}
+  name: trips
+  owner: trips
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: payments
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  cluster: {name: postgres}
+  name: payments
+  owner: payments

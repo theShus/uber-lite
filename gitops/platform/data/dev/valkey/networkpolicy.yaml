@@ -1,0 +1,24 @@
+# Valkey (data): only the three services that use it may connect. `data` has no default-deny (the
+# operators must reach their pods), so each component isolates itself.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: valkey
+  labels:
+    app.kubernetes.io/name: valkey
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: valkey
+  policyTypes: [Ingress]
+  ingress:
+    - from:                                      # three elements = OR; each one = pods named X IN uber-lite (AND)
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: uber-lite}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: location-service}}
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: uber-lite}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: matching-service}}
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: uber-lite}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: pricing-service}}
+      ports:
+        - {port: valkey, protocol: TCP}

@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  podSelector: {}
+  policyTypes: [Egress]
+  egress:
+    - to:
+        # ONE list element with two selectors = AND: "kube-dns pods IN kube-system".
+        # A "-" before podSelector would make it OR: any pod in kube-system, or kube-dns pods here.
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kube-system}   # automatic label on every namespace
+          podSelector:
+            matchLabels: {k8s-app: kube-dns}   # CoreDNS pods; policies see pod IPs after DNAT, never the Service IP
+      ports:
+        - {protocol: UDP, port: 53}
+        - {protocol: TCP, port: 53}            # TCP when an answer doesn't fit in one UDP packet

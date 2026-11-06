@@ -1,0 +1,141 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "microservice chart values",
+  "type": "object",
+  "properties": {
+    "nameOverride": {"type": "string"},
+    "image": {
+      "type": "object",
+      "required": ["repository"],
+      "properties": {
+        "repository": {"type": "string"},
+        "tag": {"type": "string"},
+        "digest": {"type": "string", "pattern": "^(sha256:[a-f0-9]{64})?$"},
+        "pullPolicy": {"enum": ["Always", "IfNotPresent", "Never"]}
+      },
+      "additionalProperties": false
+    },
+    "command": {"type": "array", "items": {"type": "string"}},
+    "args": {"type": "array", "items": {"type": "string"}},
+    "ports": {
+      "type": "object",
+      "properties": {
+        "http": {"type": "integer", "minimum": 1, "maximum": 65535},
+        "grpc": {"type": "integer", "minimum": 0, "maximum": 65535}
+      },
+      "additionalProperties": false
+    },
+    "env": {
+      "type": "object",
+      "additionalProperties": {"type": ["string", "number", "boolean"]}
+    },
+    "secretEnv": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["secretName", "key"],
+        "properties": {
+          "secretName": {"type": "string", "minLength": 1},
+          "key": {"type": "string", "minLength": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["requests"],
+      "properties": {
+        "requests": {"type": "object", "required": ["cpu", "memory"]},
+        "limits": {"type": "object"}
+      }
+    },
+    "probes": {"type": "object"},
+    "shutdown": {
+      "type": "object",
+      "properties": {
+        "preStopSeconds": {"type": "integer", "minimum": 0},
+        "terminationGracePeriodSeconds": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "podSecurity": {
+      "type": "object",
+      "properties": {
+        "runAsUser": {"type": "integer", "minimum": 1},
+        "runAsGroup": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "replicas": {"type": "integer", "minimum": 1},
+    "autoscaling": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "minReplicas": {"type": "integer", "minimum": 1},
+        "maxReplicas": {"type": "integer", "minimum": 1},
+        "targetCPUUtilization": {"type": "integer", "minimum": 1, "maximum": 100}
+      },
+      "additionalProperties": false
+    },
+    "pdb": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "maxUnavailable": {"type": ["integer", "string"]}
+      },
+      "additionalProperties": false
+    },
+    "service": {
+      "type": "object",
+      "properties": {"httpPort": {"type": "integer", "minimum": 1, "maximum": 65535}},
+      "additionalProperties": false
+    },
+    "serviceAccount": {
+      "type": "object",
+      "properties": {
+        "annotations": {"type": "object", "additionalProperties": {"type": "string"}},
+        "automountToken": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "topologySpread": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "zoneWhenUnsatisfiable": {"enum": ["DoNotSchedule", "ScheduleAnyway"]}
+      },
+      "additionalProperties": false
+    },
+    "networkPolicy": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "allowFrom": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
+        "allowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}}
+      },
+      "additionalProperties": false
+    },
+    "migration": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "command": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "definitions": {
+    "peer": {
+      "type": "object",
+      "required": ["port"],
+      "properties": {
+        "podName": {"type": "string"},
+        "podLabels": {"type": "object", "additionalProperties": {"type": "string"}},
+        "namespace": {"type": "string"},
+        "cidr": {"type": "string"},
+        "port": {"type": ["integer", "string"]}
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,27 @@
+{{- if and .Values.migration.enabled .Values.networkPolicy.enabled }}
+{{- /* Hook i ovaj, sa nižom težinom, da postoji pre nego što migration Job krene. */}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "microservice.migrationName" . }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migration
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-10"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "microservice.migrationName" . }}
+  policyTypes: [Ingress, Egress]
+  egress:
+    {{- range .Values.networkPolicy.allowTo }}
+    - to:
+        - {{- include "microservice.peer" . | trim | nindent 10 }}
+      ports:
+        - port: {{ .port }}
+          protocol: TCP
+    {{- end }}
+{{- end }}

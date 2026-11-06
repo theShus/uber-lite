@@ -1,0 +1,7 @@
+image:
+  tag: dev
+env:
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
+  VALKEY_URL: redis://valkey.data:6379/0
+autoscaling:
+  minReplicas: 1

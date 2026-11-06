@@ -1,0 +1,8 @@
+# notification-service: dev (kind on the hub)
+image:
+  tag: dev
+env:
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
+autoscaling:
+  enabled: false        # one fixed replica on dev; topic 21 scales it with KEDA
+replicas: 1

@@ -1,0 +1,8 @@
+image:
+  tag: dev
+
+env:
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092 # this is used to figure out where the rest of kafka cluster is
+                                                    # this url is ClusterIP made by strimzi
+autoscaling:
+  minReplicas: 1

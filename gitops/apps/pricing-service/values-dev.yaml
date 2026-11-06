@@ -3,3 +3,6 @@ image:
 
 env:
   VALKEY_URL: redis://valkey.data:6379/0
+
+autoscaling:
+  minReplicas: 1

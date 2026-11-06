@@ -1,0 +1,13 @@
+# trip-service: the same in every environment
+image:
+  repository: trip-service
+env:
+  LOG_LEVEL: INFO
+secretEnv:
+  DATABASE_URL: {secretName: trip-service-db, key: url}
+migration:
+  enabled: true
+networkPolicy:
+  allowTo:
+    - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+    - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}

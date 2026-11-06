@@ -75,3 +75,7 @@ networkPolicy:
   enabled: true
   allowFrom: []
   allowTo: []
+
+migration:
+  enabled: false                           # true za servise sa bazom
+  command: ["python", "-m", "app.migrate"] # isti image, druga komanda

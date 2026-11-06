@@ -7,10 +7,9 @@ on:
 permissions:
   contents: read
 
-
 concurrency: # this is so a PR can be updated and re-run without waiting for the previous run to finish
-    group: pr-${{ github.event.pull_request.number }}
-    cancel-in-progress: true # this means a new PR will cancel the previous run
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true # this means a new PR will cancel the previous run
 
 jobs:
   changes:

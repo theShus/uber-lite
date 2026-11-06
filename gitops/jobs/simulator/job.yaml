@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: simulator
+  labels: {app.kubernetes.io/name: simulator, app.kubernetes.io/part-of: uber-lite}
+spec:
+  backoffLimit: 0                    # bez ponavljanja: ponovljena simulacija duplira saobraćaj
+  ttlSecondsAfterFinished: 3600      # Job ostaje sat vremena, zbog logova
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: simulator, app.kubernetes.io/part-of: uber-lite}
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, runAsGroup: 10001, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: simulator
+          image: simulator:dev
+          imagePullPolicy: IfNotPresent
+          args: ["--drivers", "50", "--riders", "20", "--duration", "5m"]   # ENTRYPOINT je već python -m app.simulate
+          env:
+            - {name: RIDER_API, value: "http://rider-api"}
+            - {name: DRIVER_API, value: "http://driver-api"}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {memory: 128Mi}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: ["ALL"]}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
+      volumes: [{name: tmp, emptyDir: {sizeLimit: 64Mi}}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: simulator
+  labels: {app.kubernetes.io/name: simulator, app.kubernetes.io/part-of: uber-lite}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: simulator}
+  policyTypes: [Ingress, Egress]
+  egress:
+    - to:                                                               # dva elementa = rider-api ILI driver-api
+        - podSelector: {matchLabels: {app.kubernetes.io/name: rider-api}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: driver-api}}
+      ports:
+        - {port: 8080, protocol: TCP}                                   # port poda, ne Service-a (80)

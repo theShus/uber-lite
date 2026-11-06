@@ -1,0 +1,77 @@
+nameOverride: ""                 # ime = ime release-a, osim ako ovde ne piše drugačije
+
+image:
+  repository: ""                 # obavezno; servis ga postavlja
+  tag: ""                        # prazno = appVersion iz Chart.yaml
+  digest: ""                     # sha256:...; ima prednost nad tagom
+  pullPolicy: IfNotPresent
+
+command: []                      # prazno = ENTRYPOINT / CMD iz image-a
+args: []
+
+ports:
+  http: 8080                     # health, metrics, REST: uvek postoji
+  grpc: 0                        # 0 = bez gRPC porta
+
+env: {}                          # NAME: value → ConfigMap, uvek kao string
+secretEnv: {}                    # NAME: {secretName: x, key: y}; mapa da se okruženja spajaju
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    memory: 128Mi                # memory limit = request; bez CPU limita
+
+probes:                          # cele probe, da servis može na tcpSocket ili grpc
+  startup:
+    httpGet: {path: /healthz, port: http}
+    periodSeconds: 2
+    failureThreshold: 15         # do 30 s za start
+  readiness:
+    httpGet: {path: /readyz, port: http}   # sme da proverava zavisnosti
+    periodSeconds: 5
+    failureThreshold: 2
+  liveness:
+    httpGet: {path: /healthz, port: http}  # nikad ne proverava zavisnosti
+    periodSeconds: 10
+    timeoutSeconds: 2
+    failureThreshold: 3
+
+shutdown:
+  preStopSeconds: 5              # pauza pre SIGTERM-a, dok se endpoint-i uklanjaju
+  terminationGracePeriodSeconds: 30   # preStop + vreme za graceful shutdown
+
+podSecurity:
+  runAsUser: 10001               # USER iz Dockerfile-a (09.2)
+  runAsGroup: 10001
+
+replicas: 2                      # samo kad je autoscaling isključen
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilization: 70
+
+pdb:
+  enabled: true
+  maxUnavailable: 1
+
+service:
+  httpPort: 80
+
+serviceAccount:
+  annotations: {}                # topic 15: AWS rola
+  automountToken: false
+
+topologySpread:
+  enabled: true
+  zoneWhenUnsatisfiable: ScheduleAnyway
+
+# Default-deny i DNS su na nivou namespace-a (Stage 1), ne ovde.
+# Peer: {podName: x} i/ili {podLabels: {...}}, opciono {namespace: y}; ili {cidr: ...}. Uvek port.
+networkPolicy:
+  enabled: true
+  allowFrom: []
+  allowTo: []

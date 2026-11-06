@@ -1,0 +1,18 @@
+image:
+  repository: pricing-service
+
+ports:
+  grpc: 50051
+
+env:
+  LOG_LEVEL: INFO
+
+resources:
+  requests: {cpu: 50m, memory: 96Mi}
+  limits: {memory: 96Mi}
+
+networkPolicy:
+  allowFrom:
+    - {podName: rider-api, port: grpc}
+  allowTo:
+    - {namespace: data, podName: valkey, port: 6379}

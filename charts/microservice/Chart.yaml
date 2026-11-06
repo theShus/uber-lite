@@ -1,0 +1,11 @@
+apiVersion: v2
+
+name: microservice
+
+description: A Helm chart for uber-lite dev ops prep system
+
+type: application
+
+version: 0.1.0
+
+appVersion: "0.1.0"

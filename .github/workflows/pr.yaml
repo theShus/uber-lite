@@ -4,11 +4,11 @@ on:
   pull_request:
     branches: [main]
 
-permission:
+permissions:
   contents: read
 
 
-concurency: # this is so a PR can be updated and re-run without waiting for the previous run to finish
+concurrency: # this is so a PR can be updated and re-run without waiting for the previous run to finish
     group: pr-${{ github.event.pull_request.number }}
     cancel-in-progress: true # this means a new PR will cancel the previous run
 

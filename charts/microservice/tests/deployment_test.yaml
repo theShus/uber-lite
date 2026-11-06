@@ -1,0 +1,51 @@
+suite: deployment                 # ime koje vidiš u izlazu (PASS/FAIL deployment)
+templates:
+  - deployment.yaml               # šta se renderuje
+  - configmap.yaml                # treba zbog checksum-a: deployment radi include configmap.yaml
+set:
+  image.repository: example/app   # važi za SVE testove u fajlu
+tests:
+  - it: leaves replicas to the HPA when autoscaling is on
+    template: deployment.yaml
+    asserts:
+      - notExists:
+          path: spec.replicas
+
+  - it: sets replicas when autoscaling is off
+    template: deployment.yaml
+    set:
+      autoscaling.enabled: false
+      replicas: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: refuses to render without an image repository
+    template: deployment.yaml
+    set:
+      image.repository: ""
+    asserts:
+      - failedTemplate:
+          errorMessage: image.repository is required
+
+  - it: adds the grpc port only for gRPC services
+    template: deployment.yaml
+    set:
+      ports.grpc: 50051
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].ports
+          count: 2
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: grpc
+            containerPort: 50051
+
+  - it: carries a config checksum in the pod template
+    template: deployment.yaml
+    asserts:
+      - matchRegex:
+          path: spec.template.metadata.annotations["checksum/config"]
+          pattern: ^[0-9a-f]{64}$

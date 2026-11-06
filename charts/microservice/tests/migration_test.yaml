@@ -1,0 +1,36 @@
+suite: migration
+templates:
+  - migration-job.yaml
+  - migration-networkpolicy.yaml
+set:
+  image.repository: example/app
+tests:
+  - it: renders nothing unless enabled
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: runs as a pre-install/pre-upgrade hook with the settings inline
+    template: migration-job.yaml
+    set:
+      migration.enabled: true
+      env.LOG_LEVEL: INFO
+      secretEnv.DATABASE_URL: {secretName: app-db, key: url}
+    asserts:
+      - equal:
+          path: metadata.annotations["helm.sh/hook"]
+          value: pre-install,pre-upgrade
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content: {name: LOG_LEVEL, value: INFO}
+      - notExists:
+          path: spec.template.spec.containers[0].envFrom    # ConfigMap još ne postoji pri prvom install-u
+
+  - it: creates its NetworkPolicy before the Job (lower hook weight)
+    template: migration-networkpolicy.yaml
+    set:
+      migration.enabled: true
+    asserts:
+      - equal:
+          path: metadata.annotations["helm.sh/hook-weight"]
+          value: "-10"

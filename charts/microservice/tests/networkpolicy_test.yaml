@@ -1,0 +1,41 @@
+suite: networkpolicy
+templates:
+  - networkpolicy.yaml
+set:
+  image.repository: example/app
+tests:
+  - it: denies all ingress when nobody is allowed in
+    asserts:
+      - isNullOrEmpty:
+          path: spec.ingress
+
+  - it: puts namespace and pod selectors in ONE element (AND), not two (OR)
+    set:
+      networkPolicy.allowTo:
+        - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+    asserts:
+      - lengthEqual:
+          path: spec.egress[0].to
+          count: 1
+      - equal:
+          path: spec.egress[0].to[0].namespaceSelector.matchLabels["kubernetes.io/metadata.name"]
+          value: data
+      - equal:
+          path: spec.egress[0].to[0].podSelector.matchLabels["strimzi.io/cluster"]
+          value: kafka
+
+  - it: renders a CIDR peer as an ipBlock
+    set:
+      networkPolicy.allowTo:
+        - {cidr: 10.0.200.0/24, port: 5432}
+    asserts:
+      - equal:
+          path: spec.egress[0].to[0].ipBlock.cidr
+          value: 10.0.200.0/24
+
+  - it: renders nothing when disabled
+    set:
+      networkPolicy.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

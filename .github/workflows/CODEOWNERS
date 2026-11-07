@@ -1,0 +1,6 @@
+# these folders are now locked behind an approval process, only @theShus can allow the change
+/.github/          @theShus
+/tools/            @theShus
+/charts/           @theShus
+/infra/            @theShus
+/gitops/platform/  @theShus

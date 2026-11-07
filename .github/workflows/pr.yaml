@@ -128,7 +128,7 @@ jobs:
           tflint --recursive --config "$PWD/.tflint.hcl"
 
       - name: trivy config
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         env:
           TRIVY_MISCONFIG_SCANNERS: terraform   # samo Terraform, ne YAML primere iz preuzetih modula
         with:

@@ -6,6 +6,6 @@ variable "github_oidc_sub_prefix" {
 variable "services" {
   description = "list of services we want to make a ECR for"
   type        = list(string)
-  default     = ["rider-api", "driver-api", "location-service", "matching-service", "pricing-service",
-  "trip-service", "payment-service", "notification-service", "simulator"]
+  default = ["rider-api", "driver-api", "location-service", "matching-service", "pricing-service",
+  	"trip-service", "payment-service", "notification-service", "simulator"]
 }

@@ -1,0 +1,31 @@
+name: main
+
+on:
+  push:
+    branches: [main]  # posle merge-a PR-a (squash = jedan push u main)
+
+permissions:
+  contents: read  # default za sve job-ove
+
+concurrency:
+  group: main
+  cancel-in-progress: false  # release se nikad ne prekida usred push-a i potpisa, novi čeka u redu
+
+jobs:
+  changes:
+    uses: ./.github/workflows/changes.yaml
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.services != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.changes.outputs.services) }}
+    permissions:
+      contents: read
+      id-token: write  # OIDC token: AWS rola i cosign sertifikat. Samo ovde.
+    uses: ./.github/workflows/build-image.yaml
+    with:
+      service: ${{ matrix.service }}
+      push: true

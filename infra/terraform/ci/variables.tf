@@ -1,5 +1,5 @@
-variable "github_repository" {
-  description = "owner/name of the github repo we are pushing from"
+variable "github_oidc_sub_prefix" {
+  description = "GitHub OIDC sub prefix for this repo (owner/repo with immutable IDs)"
   type = string
 }
 

@@ -1,0 +1,23 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions  # SHA pinovi u .github/workflows/*
+    directory: /
+    schedule: {interval: weekly}
+    groups:
+      actions:
+        patterns: ["*"]  # sve akcije u jednom PR-u nedeljno
+
+  - package-ecosystem: docker  # FROM linije u Dockerfile-ovima
+    directories: ["/apps/*"]
+    schedule: {interval: weekly}
+
+  - package-ecosystem: pip  # requirements*.txt po servisu
+    directories: ["/apps/*"]
+    schedule: {interval: weekly}
+    groups:
+      python:
+        patterns: ["*"]
+
+  - package-ecosystem: terraform  # provider-i po sloju (.terraform.lock.hcl)
+    directories: ["/infra/terraform/*"]
+    schedule: {interval: monthly}

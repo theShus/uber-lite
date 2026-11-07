@@ -85,7 +85,7 @@ jobs:
           cache-to: type=gha,scope=${{ inputs.service }},mode=max
 
       - if: inputs.push # same as our install-k8s-tools.sh script
-        uses: sigstore/cosign-installer@v4.1.2
+        uses: sigstore/cosign-installer@v4.1.3
         with:
           cosign-release: v3.1.3
 

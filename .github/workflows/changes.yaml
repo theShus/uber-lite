@@ -1,0 +1,57 @@
+name: changes
+
+on:
+  workflow_call:  # ovaj workflow se ne okida sam, poziva ga drugi workflow (uses:)
+    outputs:  # ono što pozivalac čita kao needs.changes.outputs.X
+      services:
+        description: JSON lista promenjenih servisa (svi, kad se promeni sam CI)
+        value: ${{ jobs.changes.outputs.services }}
+      chart:
+        value: ${{ jobs.changes.outputs.chart }}
+      terraform:
+        value: ${{ jobs.changes.outputs.terraform }}
+      ci:
+        value: ${{ jobs.changes.outputs.ci }}
+
+# namerno bez permissions: bloka. Prava daje pozivalac.
+
+jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      services: ${{ steps.services.outputs.list }}
+      chart: ${{ steps.filter.outputs.chart }}
+      terraform: ${{ steps.filter.outputs.terraform }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # v4.0.3
+        with:
+          filters: |
+            rider-api: ['apps/rider-api/**']
+            driver-api: ['apps/driver-api/**']
+            location-service: ['apps/location-service/**']
+            matching-service: ['apps/matching-service/**']
+            pricing-service: ['apps/pricing-service/**']
+            trip-service: ['apps/trip-service/**']
+            payment-service: ['apps/payment-service/**']
+            notification-service: ['apps/notification-service/**']
+            simulator: ['apps/simulator/**']
+            ci: ['.github/**', 'tools/**']
+            chart: ['charts/**', 'gitops/apps/**']
+            terraform: ['infra/terraform/**']
+
+      - id: services
+        env:
+          CHANGED: ${{ steps.filter.outputs.changes }}
+          CI_CHANGED: ${{ steps.filter.outputs.ci }}
+        run: |
+          if [ "$CI_CHANGED" = "true" ]; then
+            list=$(for d in apps/*/; do basename "$d"; done | jq -R . | jq -sc .)
+          else
+            list=$(echo "$CHANGED" | jq -c '[.[] | select(. != "ci" and . != "chart" and . != "terraform")]')
+          fi
+          echo "services: $list"
+          echo "list=$list" >> "$GITHUB_OUTPUT"

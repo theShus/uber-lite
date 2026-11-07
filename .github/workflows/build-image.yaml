@@ -1,0 +1,105 @@
+name: build-image
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        type: string
+        required: true
+      push:
+        type: boolean
+        default: false  # PR ne prosleđuje push, pa je false
+    outputs:
+      digest:
+        description: digest push-ovanog image indexa (prazno kad nema push-a)
+        value: ${{ jobs.build.outputs.digest }}
+
+# bez permissions: bloka. Caller daje id-token: write samo na main-u.
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1  # v4.4.0 (emulacija arm64)
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069  # v4.4.1
+
+      # --- UVEK (PR i main): build za scan, pa Trivy gate ---
+      - name: build for the scan (amd64, loaded locally)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: apps/${{ inputs.service }}
+          load: true
+          tags: ${{ inputs.service }}:scan
+          cache-from: type=gha,scope=${{ inputs.service }}
+          cache-to: type=gha,scope=${{ inputs.service }},mode=max
+
+      - name: scan (fail on fixable CRITICAL)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25  # v0.36.0
+        with:
+          image-ref: ${{ inputs.service }}:scan
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          version: v0.76.0
+
+      # --- SAMO kad je push: true (main) ---
+      - if: inputs.push
+        name: AWS credentials (OIDC → uber-lite-ci-push)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd  # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_CI_ROLE_ARN }}
+          aws-region: eu-central-1
+          role-session-name: gha-build-${{ inputs.service }}-${{ github.run_id }}  # vidi se u CloudTrail-u
+          mask-aws-account-id: true
+
+      - if: inputs.push
+        name: docker login to ECR (ecr:GetAuthorizationToken)
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd  # v2.1.7
+
+      - if: inputs.push
+        id: meta
+        name: tags (sha-<commit>) and OCI labels
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302  # v6.2.0
+        with:
+          images: ${{ vars.ECR_REGISTRY }}/uber-lite/${{ inputs.service }}
+          tags: type=sha
+          labels: |
+            org.opencontainers.image.title=${{ inputs.service }}
+
+      - if: inputs.push
+        id: push
+        name: build and push (amd64 + arm64) with SBOM and provenance
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc  # v7.4.0
+        with:
+          context: apps/${{ inputs.service }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }} # this is the iamge name, it is combines with the images.name and images.tag
+          labels: ${{ steps.meta.outputs.labels }}
+          sbom: true
+          provenance: mode=max
+          cache-from: type=gha,scope=${{ inputs.service }}
+          cache-to: type=gha,scope=${{ inputs.service }},mode=max
+
+      - if: inputs.push # same as our install-k8s-tools.sh script
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6  # v4.1.2
+        with:
+          cosign-release: v3.1.3
+
+      - if: inputs.push
+        name: sign (keyless; the certificate names this workflow)
+        env:
+          IMAGE: ${{ vars.ECR_REGISTRY }}/uber-lite/${{ inputs.service }}
+          DIGEST: ${{ steps.push.outputs.digest }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          SERVICE: ${{ inputs.service }}
+        run: |
+          cosign sign --yes "$IMAGE@$DIGEST"
+          {
+            echo "### $SERVICE"
+            echo "- tag: \`$VERSION\`"
+            echo "- digest: \`$DIGEST\` (amd64 + arm64, SBOM, provenance, signed)"
+          } >> "$GITHUB_STEP_SUMMARY"

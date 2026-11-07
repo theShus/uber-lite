@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "push_trust" {
     condition {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
-      values = ["${var.github_oidc_sub_prefix}:ref:refs/heads/main"]
+      values   = ["${var.github_oidc_sub_prefix}:ref:refs/heads/main"]
     }
   }
 }

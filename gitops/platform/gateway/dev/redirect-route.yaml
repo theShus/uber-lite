@@ -8,10 +8,11 @@ spec:
   parentRefs: 
   - name: uber-lite
     sectionName: http
-  hostnames: ["*.dev.shus.world"]
+  hostnames: ["api.dev.shus.world"]
   rules:
   - filters:
     - type: RequestRedirect
       requestRedirect:
         scheme: https
+        hostname: api.dev.shus.world
         statusCode: 301

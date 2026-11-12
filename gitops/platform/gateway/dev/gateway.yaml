@@ -1,0 +1,30 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: uber-lite
+  namespace: kong
+spec:
+  gatewayClassName: kong
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      hostname: "*.dev.shus.world"
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      port: 443
+      protocol: HTTPS
+      tls:
+        mode: Terminate # kong terminates TLS, decritps traffic, so pods will get request in plain HTTP
+        certificateRefs:
+          - kind: Secret
+            name: dev-wildcard-tls # name of the secret that contains the TLS certificate and private key
+      hostname: "*.dev.shus.world"
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

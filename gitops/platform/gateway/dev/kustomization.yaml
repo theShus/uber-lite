@@ -4,3 +4,5 @@ resources:
   - gateway.yaml
   - gatewayclass.yaml
   - plugins/rl-drivers.yaml
+  - plugins/key-auth-riders.yaml
+  - plugins/request-id.yaml

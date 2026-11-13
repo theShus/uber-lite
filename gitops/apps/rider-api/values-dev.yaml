@@ -11,3 +11,5 @@ route:
   enabled: true
   hostnames: ["api.dev.shus.world"]
   pathPrefixes: ["/rides"]
+  annotations:
+    konghq.com/plugins: key-auth-riders

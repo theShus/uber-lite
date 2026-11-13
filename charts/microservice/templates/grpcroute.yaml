@@ -1,0 +1,27 @@
+# templates/grpcroute.yaml
+{{- if and .Values.route.enabled (eq .Values.route.kind "GRPCRoute") }}
+{{- if not .Values.ports.grpc }}
+{{- fail "route.kind GRPCRoute needs ports.grpc" }}
+{{- end }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: {{ include "microservice.name" . }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+  {{- with .Values.route.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  parentRefs:
+    - {{ include "microservice.parentRef" . | nindent 6 | trim }}
+  {{- with .Values.route.hostnames }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - backendRefs:
+        - name: {{ include "microservice.name" . }}
+          port: {{ .Values.ports.grpc }}
+{{- end }}

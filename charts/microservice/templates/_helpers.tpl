@@ -62,3 +62,13 @@ podSelector:
 {{- define "microservice.migrationName" -}}
 {{- printf "%s-migrate" (include "microservice.name" .) | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
+
+{{/* The Gateway (and listener) a route attaches to. The Gateway itself belongs to the platform. */}}
+{{- define "microservice.parentRef" -}}
+name: {{ required "route.gateway.name is required" .Values.route.gateway.name }}
+namespace: {{ required "route.gateway.namespace is required" .Values.route.gateway.namespace }}
+{{- with .Values.route.gateway.sectionName }}
+sectionName: {{ . }}
+{{- end }}
+{{- end -}}
+

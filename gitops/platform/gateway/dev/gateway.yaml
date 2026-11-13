@@ -12,7 +12,10 @@ spec:
       hostname: "*.dev.shus.world"
       allowedRoutes:
         namespaces:
-          from: Same
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"
     - name: https
       port: 443
       protocol: HTTPS

@@ -14,5 +14,6 @@ resources:
 networkPolicy:
   allowFrom:
     - {podName: rider-api, port: grpc}
+    - {namespace: kong, port: grpc}
   allowTo:
     - {namespace: data, podName: valkey, port: 6379}

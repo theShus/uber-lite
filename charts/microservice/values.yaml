@@ -60,6 +60,7 @@ pdb:
 
 service:
   httpPort: 80
+  annotations: {} # used for kong grcp route
 
 serviceAccount:
   annotations: {}                # topic 15: AWS rola
@@ -79,3 +80,14 @@ networkPolicy:
 migration:
   enabled: false                           # true za servise sa bazom
   command: ["python", "-m", "app.migrate"] # isti image, druga komanda
+
+route:
+  enabled: false
+  kind: HTTPRoute
+  gateway:
+    name: uber-lite
+    namespace: kong
+    sectionName: "" #this is used just for pricing for GRPC route (needs https)
+  hostnames: []
+  pathPrefixes: ["/"]
+  annotations: {}

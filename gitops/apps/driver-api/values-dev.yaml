@@ -6,3 +6,8 @@ env:
 
 autoscaling:
   minReplicas: 1
+
+route:
+  enabled: true
+  hostnames: ["api.dev.shus.world"]
+  pathPrefixes: ["/drivers"]

@@ -14,7 +14,13 @@ migration:
 networkPolicy:
   allowFrom:
     - {podName: simulator, port: http}
+    - {namespace: kong, port: http} # opened traffic from the outside (kong proxy pods)
   allowTo:
     - {podName: pricing-service, port: 50051}
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}     # Kafka brokers (Strimzi's own label)
     - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}     # all Postgres instances (CNPG's own label)
+
+route:
+  annotations:
+    konghq.com/protocols: https
+    konghq.com/https-redirect-status-code: "301"

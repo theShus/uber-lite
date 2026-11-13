@@ -11,8 +11,13 @@ resources:
   requests: {cpu: 50m, memory: 96Mi}
   limits: {memory: 96Mi}
 
+service:
+  annotations:
+    konghq.com/protocol: grpc
+
 networkPolicy:
   allowFrom:
     - {podName: rider-api, port: grpc}
+    - {namespace: kong, port: grpc}
   allowTo:
     - {namespace: data, podName: valkey, port: 6379}

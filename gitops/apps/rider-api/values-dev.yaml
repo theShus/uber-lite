@@ -6,3 +6,10 @@ env:
                                                     # this url is ClusterIP made by strimzi
 autoscaling:
   minReplicas: 1
+
+route:
+  enabled: true
+  hostnames: ["api.dev.shus.world"]
+  pathPrefixes: ["/rides"]
+  annotations:
+    konghq.com/plugins: key-auth-riders

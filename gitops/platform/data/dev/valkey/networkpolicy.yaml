@@ -20,5 +20,8 @@ spec:
           podSelector: {matchLabels: {app.kubernetes.io/name: matching-service}}
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: uber-lite}}
           podSelector: {matchLabels: {app.kubernetes.io/name: pricing-service}}
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kong}}
+          podSelector: {matchLabels: {app.kubernetes.io/name: gateway, app.kubernetes.io/instance: kong}}
+          # gateway is referencing the Kong proxy pod aka kong gateway, not the kind: Gateway (this is config for the proxy pod)
       ports:
         - {port: valkey, protocol: TCP}

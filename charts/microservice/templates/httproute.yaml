@@ -1,0 +1,32 @@
+# templates/httproute.yaml
+{{- if and .Values.route.enabled (eq .Values.route.kind "HTTPRoute") }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ include "microservice.name" . }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+  annotations:
+    konghq.com/protocols: https                    # platform policy: HTTPRoute je samo HTTPS
+    konghq.com/https-redirect-status-code: "301"
+    {{- with .Values.route.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  parentRefs:
+    - {{ include "microservice.parentRef" . | nindent 6 | trim }}
+  {{- with .Values.route.hostnames }}
+  hostnames:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - matches:
+        {{- range .Values.route.pathPrefixes }}
+        - path:
+            type: PathPrefix
+            value: {{ . }}
+        {{- end }}
+      backendRefs:
+        - name: {{ include "microservice.name" . }}
+          port: {{ .Values.service.httpPort }}
+{{- end }}

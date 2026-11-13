@@ -1,0 +1,24 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: key-auth-riders
+  namespace: uber-lite
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+plugin: key-auth
+config:
+  key_names: [apikey]               # header u kojem Kong traži ključ, treba da se upise pri slanju zahteva u app code
+  hide_credentials: true            # ne prosleđuj ključ upstream-u (logovi app-a)
+---
+apiVersion: configuration.konghq.com/v1
+kind: KongConsumer
+metadata:
+  name: partner-app
+  namespace: uber-lite
+  annotations:
+    kubernetes.io/ingress.class: kong   # KIC obrađuje samo consumer-e svoje klase
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+username: partner-app               # stiže upstream kao X-Consumer-Username
+credentials:
+  - partner-app-key                 # ime Secret-a; lista → rotacija bez prekida

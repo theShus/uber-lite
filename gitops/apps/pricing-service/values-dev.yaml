@@ -6,3 +6,10 @@ env:
 
 autoscaling:
   minReplicas: 1
+
+route:
+  enabled: true
+  kind: GRPCRoute
+  hostnames: ["pricing.dev.shus.world"]
+  gateway:
+    sectionName: https

@@ -7,5 +7,6 @@ env:
 networkPolicy:
   allowFrom:
     - {podName: simulator, port: http}
+    - {namespace: kong, port: http}
   allowTo:
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}

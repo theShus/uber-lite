@@ -1,0 +1,14 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongClusterPlugin
+metadata:
+  name: request-id
+  annotations:
+    kubernetes.io/ingress.class: kong
+  labels:
+    global: "true"                  # važi za svaku rutu, bez annotation-a
+    app.kubernetes.io/part-of: uber-lite
+plugin: correlation-id
+config:
+  header_name: X-Request-ID
+  generator: uuid#counter
+  echo_downstream: true             # vrati ID klijentu u odgovoru

@@ -71,4 +71,3 @@ namespace: {{ required "route.gateway.namespace is required" .Values.route.gatew
 sectionName: {{ . }}
 {{- end }}
 {{- end -}}
-

@@ -9,9 +9,9 @@ metadata:
   annotations:
     konghq.com/protocols: https                    # platform policy: HTTPRoute je samo HTTPS
     konghq.com/https-redirect-status-code: "301"
-  {{- with .Values.route.annotations }}
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    {{- with .Values.route.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   parentRefs:
     - {{ include "microservice.parentRef" . | nindent 6 | trim }}

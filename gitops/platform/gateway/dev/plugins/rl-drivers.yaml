@@ -1,0 +1,17 @@
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: rl-drivers
+  namespace: uber-lite              # kači se samo na rute u svom namespace-u
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+plugin: rate-limiting
+config:
+  minute: 30
+  limit_by: ip
+  policy: redis                     # jedan brojač za sve Kong pod-ove
+  redis:
+    host: valkey.data.svc.cluster.local
+    port: 6379
+    database: 1                     # odvojeno od app podataka (db 0)
+  fault_tolerant: true              # Valkey dole → zahtevi prolaze (fail-open), namerno

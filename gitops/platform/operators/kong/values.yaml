@@ -1,5 +1,6 @@
 # kong/ingress chart 0.24.0: Kong Ingress Controller 3.5 + Kong Gateway 3.9 (DB-less)
 gateway:
+  replicaCount: 2 # HA for pluging testing
   proxy:
     type: NodePort          # dev: kind mapira hub 80/443 na ove portove (kind-dev.yaml)
     http:

@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - gateway.yaml
   - gatewayclass.yaml
+  - plugins/rl-drivers.yaml

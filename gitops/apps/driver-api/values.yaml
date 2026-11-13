@@ -10,8 +10,3 @@ networkPolicy:
     - {namespace: kong, port: http}
   allowTo:
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
-
-route:
-  annotations:
-    konghq.com/protocols: https
-    konghq.com/https-redirect-status-code: "301"

@@ -19,13 +19,17 @@ tests:
     asserts:
       - equal:
           path: spec.parentRefs[0]
-          value: {name: uber-lite, namespace: kong}
+          value: {name: uber-lite, namespace: kong, sectionName: https}
       - equal:
           path: spec.rules[0].matches[0].path.value
           value: /rides
       - equal:
           path: spec.rules[0].backendRefs[0].port
           value: 80
+      - equal:
+          path: metadata.annotations["konghq.com/protocols"]
+          value: https
+
 
   - it: sends a GRPCRoute to the grpc port
     template: grpcroute.yaml

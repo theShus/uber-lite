@@ -87,7 +87,7 @@ route:
   gateway:
     name: uber-lite
     namespace: kong
-    sectionName: "" #this is used just for pricing for GRPC route (needs https)
+    sectionName: https
   hostnames: []
   pathPrefixes: ["/"]
   annotations: {}

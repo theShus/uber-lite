@@ -12,10 +12,7 @@ spec:
       hostname: "*.dev.shus.world"
       allowedRoutes:
         namespaces:
-          from: Selector
-          selector:
-            matchLabels:
-              gateway-access: "true"
+          from: Same          # nijedna app ruta na plain HTTP; redirect rade annotation-e na HTTPS rutama
     - name: https
       port: 443
       protocol: HTTPS

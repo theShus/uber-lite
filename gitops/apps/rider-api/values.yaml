@@ -19,8 +19,3 @@ networkPolicy:
     - {podName: pricing-service, port: 50051}
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}     # Kafka brokers (Strimzi's own label)
     - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}     # all Postgres instances (CNPG's own label)
-
-route:
-  annotations:
-    konghq.com/protocols: https
-    konghq.com/https-redirect-status-code: "301"

@@ -7,8 +7,8 @@ metadata:
   labels:
     {{- include "microservice.labels" . | nindent 4 }}
   annotations:
-  konghq.com/protocols: https                    # platform policy: HTTPRoute je samo HTTPS
-  konghq.com/https-redirect-status-code: "301"
+    konghq.com/protocols: https                    # platform policy: HTTPRoute je samo HTTPS
+    konghq.com/https-redirect-status-code: "301"
   {{- with .Values.route.annotations }}
     {{- toYaml . | nindent 4 }}
   {{- end }}

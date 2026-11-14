@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---- build stage: install dependencies into a virtualenv -------------------------
-FROM python:3.13-slim AS build
+FROM python:3.15-slim AS build
 WORKDIR /app
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" \
@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements.txt
 
 # ---- runtime stage: only Python + the venv + our code ----------------------------
-FROM python:3.13-slim AS runtime
+FROM python:3.15-slim AS runtime
 RUN useradd --uid 10001 --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /app
 COPY --from=build /opt/venv /opt/venv

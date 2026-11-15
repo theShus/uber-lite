@@ -21,7 +21,7 @@ variable "azs" {
 variable "nat_mode" {
   description = "How private subnets reach the internet: instance (fck-nat), gateway (one NAT GW per AZ), or none"
   type        = string
-  default     = "gateway"
+  default     = "instance" # fck-nat: labs; production uses one NAT gateway per AZ
   validation {
     condition     = contains(["instance", "gateway", "none"], var.nat_mode)
     error_message = "nat_mode must be instance, gateway or none."

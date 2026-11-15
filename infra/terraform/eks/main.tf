@@ -5,14 +5,14 @@ data "terraform_remote_state" "network" {
 }
 
 locals {
-    name = "ul-${var.env}" # names of our qa and prod EKS
-    net = data.terraform_remote_state.network.outputs # all network output varaibles from the data state we declared above
+  name = "ul-${var.env}"                             # names of our qa and prod EKS
+  net  = data.terraform_remote_state.network.outputs # all network output varaibles from the data state we declared above
 }
 
 
-  # Lab trade-offs, reviewed like code. Each expires at the end of the track.
-  # trivy:ignore:AWS-0040:exp:2027-01-31 -- public endpoint, limited to the home IP; production would be private-only
-  # trivy:ignore:AWS-0104:exp:2027-01-31 -- nodes need egress (ECR, STS, EKS) through NAT; per-workload egress is limited by NetworkPolicies
+# Lab trade-offs, reviewed like code. Each expires at the end of the track.
+# trivy:ignore:AWS-0040:exp:2027-01-31 -- public endpoint, limited to the home IP; production would be private-only
+# trivy:ignore:AWS-0104:exp:2027-01-31 -- nodes need egress (ECR, STS, EKS) through NAT; per-workload egress is limited by NetworkPolicies
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "21.29.0"
@@ -77,12 +77,12 @@ module "eks" {
 
   eks_managed_node_groups = {
     system = {
-      ami_type = "AL2023_ARM_64_STANDARD"
+      ami_type       = "AL2023_ARM_64_STANDARD"
       instance_types = var.node_instance_types
-      capacity_type = var.node_capacity_type
-      min_size = 2
-      max_size = 3
-      desired_size = 2
+      capacity_type  = var.node_capacity_type
+      min_size       = 2
+      max_size       = 3
+      desired_size   = 2
 
       block_device_mappings = { # hard disc that we are attaching to each node
         root = {
@@ -107,7 +107,7 @@ module "eks" {
       # Pod needs 2 hops, to server and then to IMDS, so if we say that IMDS will only accept 1 hops attempts, pods can never get node privs
 
       metadata_options = {
-        http_endpoint               = "enabled" # enable IMDS endpoint access, so we can access it in general
+        http_endpoint               = "enabled"  # enable IMDS endpoint access, so we can access it in general
         http_tokens                 = "required" # IMDSv2 only, newer and stronger version of the service
         http_put_response_hop_limit = 1          # pods can't reach IMDS, locked to 1 hop so only nodes can
       }

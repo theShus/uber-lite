@@ -1,20 +1,20 @@
 variable "env" {
   description = "qa or prod string, descibing which env we are using"
-  type = string
+  type        = string
   validation {
-    condition = contains(["qa", "prod"], var.env)
-    error_message = "env var must be qa or prod" 
+    condition     = contains(["qa", "prod"], var.env)
+    error_message = "env var must be qa or prod"
   }
 }
 
 variable "region" {
-  type = string
+  type    = string
   default = "eu-central-1"
 }
 
 variable "state_bucket" { # we set this directly in the input se we dont keep the bucket in the code
   description = "name / ARN of the s3 bucket that hold network state, so we know from what bucket to pull the output data for priv subnets"
-  type = string
+  type        = string
 }
 
 variable "kubernetes_version" {
@@ -25,7 +25,7 @@ variable "kubernetes_version" {
 
 variable "public_access_cidrs" {
   description = "who may reach public api endpoints: my home IP as a /32"
-  type = list(string)
+  type        = list(string)
 }
 
 variable "node_instance_types" {

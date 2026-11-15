@@ -30,3 +30,4 @@ infra/terraform/backend.hcl
 
 # holds the account ID (bucket name) and a home IP
 infra/terraform/k8s-lab/terraform.tfvars
+ infra/terraform/*/terraform.tfvars

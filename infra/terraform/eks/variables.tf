@@ -12,7 +12,7 @@ variable "region" {
   default = "eu-central-1"
 }
 
-variable "state_bucket" {
+variable "state_bucket" { # we set this directly in the input se we dont keep the bucket in the code
   description = "name / ARN of the s3 bucket that hold network state, so we know from what bucket to pull the output data for priv subnets"
   type = string
 }

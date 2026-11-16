@@ -6,7 +6,7 @@ terraform {
   backend "s3" {
     # key          = "eks/terraform.tfstate"
     # we are not using this because we want to separate the QA and PROD env state files, this way they would use the same tfstate
-    # we will give this exact key in the init command 
+    # we will give this exact key in the init command
     # terraform init -backend-config=../backend.hcl -backend-config="key=eks/prod/terraform.tfstate" -reconfigure
     use_lockfile = true
   }

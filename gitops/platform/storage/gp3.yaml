@@ -1,0 +1,16 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gp3
+  labels:
+    app.kubernetes.io/part-of: uber-lite-platform
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: ebs.csi.aws.com
+parameters:
+  type: gp3
+  encrypted: "true"                  # the AWS-managed aws/ebs key; no customer key
+  csi.storage.k8s.io/fstype: ext4
+volumeBindingMode: WaitForFirstConsumer   # create the volume in the AZ where the pod lands (11.7)
+reclaimPolicy: Delete
+allowVolumeExpansion: true

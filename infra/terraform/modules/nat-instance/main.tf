@@ -8,6 +8,7 @@ data "aws_ami" "fck_nat" {
   }
 }
 
+# trivy:ignore:AWS-0104:exp:2027-01-31 -- a NAT's whole job is egress to the internet; inbound is limited to the VPC CIDR
 resource "aws_security_group" "this" {
   name        = var.name
   description = "fck-nat: forward anything from inside the VPC"
@@ -38,6 +39,15 @@ resource "aws_instance" "this" {
   source_dest_check           = false # a router forwards other hosts' packets (04.5 D3)
   vpc_security_group_ids      = [aws_security_group.this.id]
   tags                        = { Name = var.name }
+
+  metadata_options {
+    http_endpoint = "enabled"
+    http_tokens   = "required" # IMDSv2 only, like the EKS nodes
+  }
+
+  root_block_device {
+    encrypted = true # with the AWS-managed aws/ebs key
+  }
 }
 
 # The default route of every private route table points at the instance's network interface.

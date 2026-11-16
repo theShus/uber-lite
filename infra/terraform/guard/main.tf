@@ -54,7 +54,6 @@ resource "aws_iam_role_policy" "lambda" { # we attach the new action policy to t
   policy = data.aws_iam_policy_document.lambda.json
 }
 
-
 data "archive_file" "code" { # we zip our python code to send it to lambda fun
   type        = "zip"
   source_file = "${path.module}/src/handler.py"
@@ -68,7 +67,6 @@ resource "aws_cloudwatch_log_group" "guard" {
   retention_in_days = 1 # created before the function, so Lambda never makes a never-expiring one
 }
 # ----
-
 
 # ---- the report channel ----
 # trivy:ignore:AWS-0136:exp:2027-01-31 -- the reports carry resource IDs, not secrets; a customer KMS key would cost $1/month
@@ -140,7 +138,7 @@ resource "aws_iam_role_policy" "scheduler" {
   policy = jsonencode({
     Version   = "2012-10-17"
     Statement = [{ Effect = "Allow", Action = "lambda:InvokeFunction", Resource = aws_lambda_function.guard.arn }] # this is a more direct way to write the policy doc
-  }) # both are just json in-line policies, they dont create as phisical objs in aws just jsons, but one is a direct other is a more pretty terraform obj way 
+  })                                                                                                               # both are just json in-line policies, they dont create as phisical objs in aws just jsons, but one is a direct other is a more pretty terraform obj way
 }
 
 resource "aws_scheduler_schedule" "nightly" {

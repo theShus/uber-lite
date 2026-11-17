@@ -1,0 +1,17 @@
+serviceAccount:
+  name: aws-load-balancer-controller
+replicaCount: 2
+podDisruptionBudget:
+  maxUnavailable: 1
+resources:
+  requests:
+      cpu: 50m
+      memory: 128Mi
+  limits:
+    memory: 256Mi
+defaultTargetType: ip                  # NLB sends traffic directly to the pods (ip instead of instance type)
+controllerConfig:
+  featureGates:                        # Kong owns the Gateway API in this cluster
+    ALBGatewayAPI: false
+    NLBGatewayAPI: false
+    GatewayListenerSet: false

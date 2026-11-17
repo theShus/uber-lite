@@ -7,61 +7,61 @@ data "terraform_remote_state" "dns" {
 }
 
 locals {
-  zone_id = data.terraform_remote_state.dns.outputs.zone_id
+  zone_id  = data.terraform_remote_state.dns.outputs.zone_id
   zone_arn = "arn:aws:route53:::hostedzone/${local.zone_id}"
 }
 
 module "lbc_pod_identity" {
-  source = "terraform-aws-modules/eks-pod-identity/aws"
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
   version = "2.9.0"
 
-  name = "${local.name}-lbc"
-  use_name_prefix = false
-  policy_name_prefix = "${local.name}-"
+  name                            = "${local.name}-lbc"
+  use_name_prefix                 = false
+  policy_name_prefix              = "${local.name}-"
   attach_aws_lb_controller_policy = true
 
   associations = {
     this = {
-      cluster_name = "${module.eks.cluster_name}"
-      namespace = "kube-system"
+      cluster_name    = "${module.eks.cluster_name}"
+      namespace       = "kube-system"
       service_account = "aws-load-balancer-controller"
     }
   }
 }
 
 module "cert_manager_pod_identity" {
-  source = "terraform-aws-modules/eks-pod-identity/aws"
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
   version = "2.9.0"
 
-  name = "${local.name}-cert-manager"
-  use_name_prefix = false
-  policy_name_prefix = "${local.name}-"
-  attach_cert_manager_policy = true 
+  name                          = "${local.name}-cert-manager"
+  use_name_prefix               = false
+  policy_name_prefix            = "${local.name}-"
+  attach_cert_manager_policy    = true
   cert_manager_hosted_zone_arns = [local.zone_arn]
 
   associations = {
     this = {
-      cluster_name = "${module.eks.cluster_name}"
-      namespace = "cert-manager"
+      cluster_name    = "${module.eks.cluster_name}"
+      namespace       = "cert-manager"
       service_account = "cert-manager"
     }
   }
 }
 
 module "external_dns_pod_identity" {
-  source = "terraform-aws-modules/eks-pod-identity/aws"
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
   version = "2.9.0"
 
-  name = "${local.name}-external-dns"
-  use_name_prefix = false
-  policy_name_prefix = "${local.name}-"
-  attach_external_dns_policy = true
+  name                          = "${local.name}-external-dns"
+  use_name_prefix               = false
+  policy_name_prefix            = "${local.name}-"
+  attach_external_dns_policy    = true
   external_dns_hosted_zone_arns = [local.zone_arn]
 
   associations = {
     this = {
-      cluster_name = "${module.eks.cluster_name}"
-      namespace = "external-dns"
+      cluster_name    = "${module.eks.cluster_name}"
+      namespace       = "external-dns"
       service_account = "external-dns"
     }
   }

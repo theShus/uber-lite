@@ -7,7 +7,7 @@ set -uo pipefail          # no -e: some kubectl calls fail on purpose (a CRD tha
 CLUSTER=${1:?usage: k8s-predestroy.sh <cluster> <context>}
 CTX=${2:?usage: k8s-predestroy.sh <cluster> <context>}
 REGION=${AWS_REGION:-eu-central-1}                  # $AWS_REGION if set, else eu-central-1
-KEEP='^(default|kube-system|kube-public|kube-node-lease|karpenter)$'   # namespaces never deleted
+KEEP='^(default|kube-system|kube-public|kube-node-lease|karpenter|external-dns)$'   # namespaces never deleted
 k() { kubectl --context "$CTX" "$@"; }              # kubectl, always against this cluster's context
 
 # no cluster: nothing inside it can own AWS resources

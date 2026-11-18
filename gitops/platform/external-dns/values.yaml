@@ -1,0 +1,16 @@
+# external-dns chart 1.23.0 txtOwnerId is set per environment by platform-up.sh
+provider:
+  name: aws
+env:
+  - {name: AWS_DEFAULT_REGION, value: eu-central-1}   # Route 53 is global, but the SDK still wants a region
+sources:
+  - gateway-httproute
+  - gateway-grpcroute
+policy: upsert-only #todo change later to sync
+registry: txt
+domainFilters: ["aws.shus.world"]
+serviceAccount:
+  name: external-dns           # must match the Pod Identity association (pod-identity.tf)
+resources:
+  requests: {cpu: 10m, memory: 48Mi}
+  limits: {memory: 128Mi}

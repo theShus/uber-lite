@@ -37,14 +37,8 @@ h upgrade --install kong ingress --repo https://charts.konghq.com --version 0.24
   -f gitops/platform/operators/kong/values.yaml \
   -f "gitops/platform/operators/kong/values-$ENV.yaml" --wait
 
-echo "== gateway certificate: self-signed placeholder (cert-manager replaces this in Stage 6)"
-if ! k -n kong get secret aws-wildcard-tls >/dev/null 2>&1; then
-  tmp=$(mktemp -d)
-  openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=*.aws.$DOMAIN" \
-    -addext "subjectAltName=DNS:*.aws.$DOMAIN" -keyout "$tmp/tls.key" -out "$tmp/tls.crt" 2>/dev/null
-  k -n kong create secret tls aws-wildcard-tls --cert "$tmp/tls.crt" --key "$tmp/tls.key"
-  rm -rf "$tmp"
-fi
+echo "== gateway certificate: self-signed placeholder (cert-manager replaces this in 16.4)"
+tools/selfsigned-tls.sh "$ENV"
 
 echo "== partner API key (never in Git)"
 if ! k -n uber-lite get secret partner-app-key >/dev/null 2>&1; then
@@ -55,6 +49,10 @@ fi
 echo "== gateway, plugins, consumers"
 k apply -k "gitops/platform/gateway/$ENV"
 
+echo "== external-dns (records from HTTPRoutes/GRPCRoutes; owner ul-$ENV)"
+h upgrade --install external-dns external-dns --repo https://kubernetes-sigs.github.io/external-dns/ --version 1.23.0 \
+  -n external-dns --create-namespace \
+  -f gitops/platform/external-dns/values.yaml --set txtOwnerId="ul-$ENV" --wait
 
 echo "== data operators: Strimzi 1.3.0 (watches only ns data) + CloudNativePG 0.29.1"
 h upgrade --install strimzi oci://quay.io/strimzi-helm/strimzi-kafka-operator --version 1.3.0 \

@@ -3,6 +3,7 @@ image:
 
 env:
   LOG_LEVEL: INFO
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
 
 networkPolicy:
   allowFrom:
@@ -10,3 +11,9 @@ networkPolicy:
     - {namespace: kong, port: http}
   allowTo:
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+
+route:
+  enabled: true
+  pathPrefixes: ["/drivers"]
+  annotations:
+    konghq.com/plugins: rl-drivers # connecting the RL pluging to the route

@@ -6,6 +6,7 @@ ports:
 
 env:
   LOG_LEVEL: INFO
+  VALKEY_URL: redis://valkey.data:6379/0
 
 resources:
   requests: {cpu: 50m, memory: 96Mi}
@@ -21,3 +22,10 @@ networkPolicy:
     - {namespace: kong, port: grpc}
   allowTo:
     - {namespace: data, podName: valkey, port: 6379}
+
+route:
+  enabled: true
+  kind: GRPCRoute
+  gateway:
+    sectionName: https
+

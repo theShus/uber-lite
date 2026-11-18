@@ -54,3 +54,19 @@ fi
 
 echo "== gateway, plugins, consumers"
 k apply -k "gitops/platform/gateway/$ENV"
+
+
+echo "== data operators: Strimzi 1.3.0 (watches only ns data) + CloudNativePG 0.29.1"
+h upgrade --install strimzi oci://quay.io/strimzi-helm/strimzi-kafka-operator --version 1.3.0 \
+  -n strimzi --create-namespace -f gitops/platform/operators/strimzi/values.yaml --wait
+h upgrade --install cnpg cloudnative-pg --repo https://cloudnative-pg.github.io/charts --version 0.29.1 \
+  -n cnpg-system --create-namespace -f gitops/platform/operators/cnpg/values.yaml --wait
+
+echo "== database secrets (before Postgres: the Cluster references pg-rides/pg-trips/pg-payments)"
+tools/dev-secrets.sh "$CTX"
+
+echo "== data: Kafka, Postgres, Valkey (PVCs land on the default gp3 StorageClass)"
+k apply -k gitops/platform/data/dev
+k -n data wait kafka/kafka --for=condition=Ready --timeout=10m
+k -n data wait cluster.postgresql.cnpg.io/postgres --for=condition=Ready --timeout=10m
+k -n data rollout status statefulset/valkey --timeout=5m

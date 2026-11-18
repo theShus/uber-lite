@@ -52,10 +52,14 @@ eks-up: eks-init
 	tools/tf-apply-safe.sh $(EKS_DIR) -var-file=$(ENV).tfvars
 	aws eks update-kubeconfig --name $(CLUSTER) --region $(REGION) --alias $(ENV)
 
-# what lives inside the cluster: today only the gp3 StorageClass (topic 18: Argo CD's bootstrap)
+# what lives inside the cluster: storage, LBC, Kong + gateway, data layer (topic 18: Argo CD's bootstrap)
 platform-up: guard-env
 	kubectl --context $(ENV) wait --for=condition=Ready nodes --all --timeout=5m
 	tools/platform-up.sh $(ENV)
+
+# every service from its newest sha- image in ECR, by digest (topic 18: Argo CD)
+app-up: guard-env
+	tools/app-up.sh $(ENV)
 
 # the whole chain, timed. $(MAKE) runs a sub-make, and ENV is passed down to it
 up: guard-env
@@ -63,6 +67,7 @@ up: guard-env
 	$(MAKE) network-up
 	$(MAKE) eks-up
 	$(MAKE) platform-up
+	$(MAKE) app-up
 	@date '+== up $(ENV): done %T'
 
 # ---- down --------------------------------------------------------------------

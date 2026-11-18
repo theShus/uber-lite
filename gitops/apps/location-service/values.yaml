@@ -3,7 +3,9 @@ image:
 
 env:
   LOG_LEVEL: INFO
-
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
+  VALKEY_URL: redis://valkey.data:6379/0
+  
 networkPolicy:
   allowTo:
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}

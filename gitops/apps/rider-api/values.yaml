@@ -4,7 +4,8 @@ image:
 env:
   LOG_LEVEL: INFO
   PRICING_ADDR: pricing-service:50051
-
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092 # this is used to figure out where the rest of kafka cluster is
+                                                    # this url is ClusterIP made by strimzi
 secretEnv:
   DATABASE_URL: {secretName: rider-api-db, key: url}
 
@@ -19,3 +20,10 @@ networkPolicy:
     - {podName: pricing-service, port: 50051}
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}     # Kafka brokers (Strimzi's own label)
     - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}     # all Postgres instances (CNPG's own label)
+
+route:
+  enabled: true
+  pathPrefixes: ["/rides"]
+  annotations:
+    konghq.com/plugins: key-auth-riders
+

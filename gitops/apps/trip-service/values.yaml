@@ -3,6 +3,8 @@ image:
   repository: trip-service
 env:
   LOG_LEVEL: INFO
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
+
 secretEnv:
   DATABASE_URL: {secretName: trip-service-db, key: url}
 migration:

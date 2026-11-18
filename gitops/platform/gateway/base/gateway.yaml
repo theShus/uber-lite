@@ -3,25 +3,27 @@ kind: Gateway
 metadata:
   name: uber-lite
   namespace: kong
+  labels:
+    app.kubernetes.io/part-of: uber-lite
 spec:
   gatewayClassName: kong
   listeners:
     - name: http
       port: 80
       protocol: HTTP
-      hostname: "*.dev.shus.world"
+      hostname: "*.placeholder.invalid" # hostname placeholder
       allowedRoutes:
         namespaces:
-          from: Same          # nijedna app ruta na plain HTTP; redirect rade annotation-e na HTTPS rutama
+          from: Same # same means only from Kong NS, because we will use annotation to set redirect to HTTPS
     - name: https
       port: 443
       protocol: HTTPS
+      hostname: "*.placeholder.invalid" # hostname placeholder
       tls:
-        mode: Terminate # kong terminates TLS, decritps traffic, so pods will get request in plain HTTP
+        mode: Terminate
         certificateRefs:
           - kind: Secret
-            name: dev-wildcard-tls # name of the secret that contains the TLS certificate and private key
-      hostname: "*.dev.shus.world"
+            name: <env>-wildcard-tls # place holder for secret name
       allowedRoutes:
         namespaces:
           from: Selector

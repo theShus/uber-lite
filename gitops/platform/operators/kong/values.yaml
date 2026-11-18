@@ -1,9 +1,5 @@
-# kong/ingress chart 0.24.0: Kong Ingress Controller 3.5 + Kong Gateway 3.9 (DB-less)
+# kong/ingress chart 0.24.0: Kong Ingress Controller 3.5 + Kong Gateway 3.9 (DB-less).
+# Shared by every environment; values-<env>.yaml adds only the differences.
+# Keys under gateway: belong to the kong/kong subchart 3.2.0.
 gateway:
-  replicaCount: 2 # HA for pluging testing
-  proxy:
-    type: NodePort          # dev: kind mapira hub 80/443 na ove portove (kind-dev.yaml)
-    http:
-      nodePort: 30080
-    tls:
-      nodePort: 30443
+  replicaCount: 2 # HA + shared rate-limit counter test; ignored where autoscaling is on (prod)

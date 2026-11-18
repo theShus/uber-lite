@@ -55,7 +55,7 @@ eks-up: eks-init
 # what lives inside the cluster: today only the gp3 StorageClass (topic 18: Argo CD's bootstrap)
 platform-up: guard-env
 	kubectl --context $(ENV) wait --for=condition=Ready nodes --all --timeout=5m
-	tools/lbc-platform-up.sh $(ENV)
+	tools/platform-up.sh $(ENV)
 
 # the whole chain, timed. $(MAKE) runs a sub-make, and ENV is passed down to it
 up: guard-env

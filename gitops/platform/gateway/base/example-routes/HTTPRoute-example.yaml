@@ -1,0 +1,23 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: rider-api
+  namespace: uber-lite
+  annotations:
+    konghq.com/protocols: https
+    konghq.com/https-redirect-status-code: "301"
+  labels:
+    app.kubernetes.io/name: rider-api
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  parentRefs:
+    - name: uber-lite # name of gateway we attach to
+      namespace: kong # NS of gateway
+      sectionName: https
+  hostnames: ["api.aws.shus.world"]
+  rules:
+    - matches:
+        - path: {type: PathPrefix, value: /rides}
+      backendRefs:
+        - name: rider-api # name of the backend app Service pod we connect the route to
+          port: 80

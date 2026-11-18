@@ -1,3 +1,15 @@
+# this is a sec plugin that is used to secure our api endpoints routes from unwated access from the public internet
+# this isnt supposed to be used by phone users in real life, this is more for stuff like this server to server
+
+# KongPlugin checks the headers of every request and takes the token located in the header we want
+# it will check it against the credentials list, list of secrets, to see if any of them match, if they do we let the request throguth
+
+# the plugin knows what secrets to look at because they are made using, plugin match "--local konghq.com/credential=key-auth "
+
+# secrets are bound to Consumers useing the credentials: field, 
+# flow: http request -> route -> KongPlugin check header secret agains his list -> match -> secret has key to consumer -> request with now consumer let through
+
+
 apiVersion: configuration.konghq.com/v1
 kind: KongPlugin
 metadata:

@@ -1,3 +1,5 @@
+# debugging tool, will attach a UUID to each net request in the header on X-Request-ID
+# used so you can follow the request througth the app/logs using the UUID, instead of digging
 apiVersion: configuration.konghq.com/v1
 kind: KongClusterPlugin
 metadata:

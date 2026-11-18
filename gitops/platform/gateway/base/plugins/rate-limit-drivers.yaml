@@ -1,0 +1,19 @@
+# rate limit plugin works by getting the IP from the LB and seeing how many requests we get for the route in a certain time
+# if that IP exceeds the given amount of requets it gets 429 too many requests
+apiVersion: configuration.konghq.com/v1
+kind: KongPlugin
+metadata:
+  name: rl-drivers
+  namespace: uber-lite # attaches to routes, so same NS as routes we have
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+plugin: rate-limiting
+config:
+  minute: 30
+  limit_by: ip 
+  policy: redis
+  redis:
+    host: valkey.data.svc.cluster.local # DNS name of Valkey Service
+    port: 6379
+    database: 1
+  fault_tolerant: true # if valkey is down the requests will still pass 

@@ -1,0 +1,10 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: kong
+  annotations:
+    konghq.com/gatewayclass-unmanaged: "true" # this says to KIC that we will set up LB and Proxy pods ourselves
+  labels:                                     # by using helm chart install, Kong helm chart sets them up both
+    app.kubernetes.io/part-of: uber-lite      # other option is using Kong Operator, that manages the setup for us, like strimzi or cnpg
+spec:                                         # no need to use the Operator for this one as its too simple
+  controllerName: konghq.com/kic-gateway-controller

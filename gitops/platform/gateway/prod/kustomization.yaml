@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources: 
+  - ../base
+
+patches:
+  - target:
+      kind: Gateway
+      name: uber-lite
+    patch: |-
+      - op: replace
+        path: /spec/listeners/0/hostname
+        value: "*.aws.shus.world"
+      - op: replace
+        path: /spec/listeners/1/hostname
+        value: "*.aws.shus.world"
+      - op: replace
+        path: /spec/listeners/1/tls/certificateRefs/0/name
+        value: "aws-wildcard-tls"

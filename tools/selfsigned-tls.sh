@@ -10,5 +10,11 @@ case "$ENV" in
 esac
 k() { kubectl --context "$ENV" "$@"; }
 
-echo "== gateway certificate: self-signed placeholder (cert-manager replaces this in 16.4)"
-tools/selfsigned-tls.sh "$ENV"
+if k -n kong get secret "$SECRET" >/dev/null 2>&1; then
+  echo "== $SECRET already exists in kong: kept"; exit 0
+fi
+tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT        # the private key never outlives the script
+openssl req -x509 -newkey rsa:2048 -nodes -days 30 -subj "/CN=*.$ZONE" \
+  -addext "subjectAltName=DNS:*.$ZONE" -keyout "$tmp/tls.key" -out "$tmp/tls.crt" 2>/dev/null
+openssl x509 -in "$tmp/tls.crt" -noout -subject -enddate
+k -n kong create secret tls "$SECRET" --cert "$tmp/tls.crt" --key "$tmp/tls.key"

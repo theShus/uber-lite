@@ -11,7 +11,6 @@
 set -euo pipefail
 ENV=${1:?usage: platform-up.sh <qa|prod>}
 CTX=$ENV CLUSTER=ul-$ENV REGION=eu-central-1
-DOMAIN="shus.world"
 cd "$(dirname "$0")/.."
 h() { helm --kube-context "$CTX" "$@"; }
 k() { kubectl --context "$CTX" "$@"; }

@@ -4,8 +4,14 @@ kind: Kustomization
 resources: 
   - ../base
 
+# replace host names for env 
+
+# add annotations for cert manager, it takes the name of the cert issuer from the annotations and finds it
+# then it requests a cert from the ClusterIssuer we declared in gitops\platform\cert-manager
+
 patches:
   - target:
+      group: gateway.networking.k8s.io
       kind: Gateway
       name: uber-lite
     patch: |-
@@ -18,3 +24,10 @@ patches:
       - op: replace
         path: /spec/listeners/1/tls/certificateRefs/0/name
         value: "aws-wildcard-tls"
+      - op: add 
+        path: /metadata/annotations
+        value:
+          cert-manager.io/cluster-issuer: letsencrypt-staging
+          cert-manager.io/private-key-algorithm: ECDSA
+
+          

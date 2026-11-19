@@ -18,3 +18,8 @@ patches:
       - op: replace
         path: /spec/listeners/1/tls/certificateRefs/0/name
         value: "dev-wildcard-tls"
+      - op: add 
+        path: /metadata/annotations
+        value:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          cert-manager.io/private-key-algorithm: ECDSA

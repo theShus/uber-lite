@@ -5,6 +5,9 @@ metadata:
   namespace: kong
   labels:
     app.kubernetes.io/part-of: uber-lite
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod written here just so i dont forget it exists, its added through the kustomization-overlay.yaml
+  #   cert-manager.io/private-key-algorithm: ECDSA
 spec:
   gatewayClassName: kong
   listeners:

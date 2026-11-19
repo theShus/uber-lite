@@ -6,6 +6,7 @@ metadata:
   annotations:
     konghq.com/protocols: https
     konghq.com/https-redirect-status-code: "301"
+    konghq.com/plugins: "key-auth-riders,  rl-drivers"
   labels:
     app.kubernetes.io/name: rider-api
     app.kubernetes.io/part-of: uber-lite

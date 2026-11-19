@@ -75,6 +75,7 @@ up: guard-env
 #    if the script fails, make stops HERE and the cluster is NOT destroyed
 # 2. destroy the cluster   3. drop the kube context (- : ignore failure if it's already gone)
 eks-down: eks-init
+	tools/tls-backup.sh $(ENV)
 	tools/k8s-predestroy.sh $(CLUSTER) $(ENV)
 	$(TF) -chdir=$(EKS_DIR) destroy -input=false -auto-approve -var-file=$(ENV).tfvars
 	-kubectl config delete-context $(ENV)

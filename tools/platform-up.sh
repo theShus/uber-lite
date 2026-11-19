@@ -36,8 +36,13 @@ h upgrade --install kong ingress --repo https://charts.konghq.com --version 0.24
   -f gitops/platform/operators/kong/values.yaml \
   -f "gitops/platform/operators/kong/values-$ENV.yaml" --wait
 
-echo "== gateway certificate: self-signed placeholder (cert-manager replaces this in 16.4)"
-tools/selfsigned-tls.sh "$ENV"
+echo "== cert-manager"
+h upgrade --install cert-manager cert-manager --repo https://charts.jetstack.io --version v1.21.2 \
+  -n cert-manager --create-namespace -f gitops/platform/cert-manager/values.yaml --wait
+k apply -f gitops/platform/cert-manager/clusterissuers.yaml
+
+echo "== the gateway's certificate: restored if we have one (before the Gateway asks for it)"
+tools/tls-restore.sh "$ENV"
 
 echo "== partner API key (never in Git)"
 if ! k -n uber-lite get secret partner-app-key >/dev/null 2>&1; then

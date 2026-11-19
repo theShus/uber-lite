@@ -29,5 +29,3 @@ patches:
         value:
           cert-manager.io/cluster-issuer: letsencrypt-prod
           cert-manager.io/private-key-algorithm: ECDSA
-
-          

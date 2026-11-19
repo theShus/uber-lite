@@ -9,4 +9,6 @@ terraform {
   }
 }
 
-provider "cloudflare" {} # reads CLOUDFLARE_API_TOKEN from the environment
+provider "cloudflare" {
+    api_token = var.cloudflare_api_token
+} # should be read from the env or some secret manager, but ive ploped it into tfvars, am lazy

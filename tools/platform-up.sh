@@ -58,6 +58,16 @@ h upgrade --install external-dns external-dns --repo https://kubernetes-sigs.git
   -n external-dns --create-namespace \
   -f gitops/platform/external-dns/values.yaml --set txtOwnerId="ul-$ENV" --wait
 
+echo "== cloudflared (the tunnel ul-$ENV is the permanent 'tunnel' layer; here only its connectors)"
+if [ "$ENV" = prod ]; then
+  k apply -k gitops/platform/namespaces/cloudflared
+  k -n cloudflared create secret generic cloudflared-token \
+    --from-file=token=<(terraform -chdir=infra/terraform/tunnel output -raw tunnel_token) \
+    --dry-run=client -o yaml | k apply -f -
+  k apply -k gitops/platform/cloudflared
+  k -n cloudflared rollout status deployment/cloudflared --timeout=3m
+fi
+
 echo "== data operators: Strimzi 1.3.0 (watches only ns data) + CloudNativePG 0.29.1"
 h upgrade --install strimzi oci://quay.io/strimzi-helm/strimzi-kafka-operator --version 1.3.0 \
   -n strimzi --create-namespace -f gitops/platform/operators/strimzi/values.yaml --wait

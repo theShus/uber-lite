@@ -1,0 +1,11 @@
+# cert-manager chart v1.21.2
+crds:
+  enabled: true                 # the chart installs and upgrades its CRDs
+config:
+  apiVersion: controller.config.cert-manager.io/v1alpha1
+  kind: ControllerConfiguration
+  gatewayAPI:
+    enabled: true               # watch Gateways (gateway-shim); needs the Gateway API CRDs first
+resources:
+  requests: {cpu: 20m, memory: 64Mi}
+  limits: {memory: 256Mi}

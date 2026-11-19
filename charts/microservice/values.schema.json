@@ -89,7 +89,8 @@
       "type": "object",
       "properties": {
         "httpPort": {"type": "integer", "minimum": 1, "maximum": 65535},
-        "annotations": {"type": "object", "additionalProperties": {"type": "string"}}
+        "annotations": {"type": "object", "additionalProperties": {"type": "string"}},
+        "headless": {"type": "boolean"}
       },
       "additionalProperties": false
     },

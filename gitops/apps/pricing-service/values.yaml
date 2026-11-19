@@ -15,6 +15,7 @@ resources:
 service:
   annotations:
     konghq.com/protocol: grpc
+  headless: true
 
 networkPolicy:
   allowFrom:

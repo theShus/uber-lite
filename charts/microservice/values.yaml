@@ -61,6 +61,7 @@ pdb:
 service:
   httpPort: 80
   annotations: {} # used for kong grcp route
+  headless: false
 
 serviceAccount:
   annotations: {}                # topic 15: AWS rola

@@ -1,0 +1,44 @@
+# since gRPC connections are long lived, a connections from rider-api would remain locked even after new pricing pods are added
+# meaning if HPA scales them up, the rider-api will still see/be bound to the old pods and not see new scaled ones
+
+# the fix - introduce a headless service for only rider-api -> pricing-service con
+# a headless service exposes all the pod ips, and then we have an internal mechanism in the Pyhon code that does round robin ip picking
+# so we "ourselves (rider api)" pick which ip we want instead of letting kubernetes sytem pick for us
+
+# ZASTO SE ZAKLJUCAJU PODOVI
+# DNS vrati ClusterIP, npr. 10.100.12.34.
+# rider-api otvori TCP konekciju: pošalje SYN paket ka 10.100.12.34:50051.
+# Paket prolazi kroz netfilter na nodu na kom je rider-api pod. Tamo kube-proxy unapred upisuje iptables pravila: "paket za 10.100.12.34:50051 → nasumično izaberi jedan pod IP → DNAT", tj. prepiši odredišnu adresu u 10.0.3.17:50051.
+# conntrack zapiše tu odluku: konekcija (src IP:port → ClusterIP:port) ide na 10.0.3.17.
+# Svaki sledeći paket iste konekcije ne prolazi ponovo kroz izbor. conntrack ga prepozna i primeni isti DNAT. Nasumični izbor se desio samo jednom, na SYN paketu.
+# Zato je zaključano:
+
+# Pravila vide pakete i konekcije, ne zahteve. Ne znaju gde jedan gRPC poziv počinje, a gde se završava, jer su to samo bajtovi unutar iste TCP konekcije.
+# HTTP/2 šalje sve pozive kroz tu jednu konekciju. Jedna konekcija znači jedan izbor i jedan pod, sve dok se konekcija ne zatvori.
+# HPA doda pod, a kube-proxy doda njegovu IP adresu u pravila. Ali pravila se primenjuju samo na nove konekcije, a rider-api ne otvara nove.
+
+{{- /* templates/service-headless.yaml */ -}}
+{{- if .Values.service.headless }}
+{{/* A second Service without a virtual IP: DNS returns the ready pods' IPs, so gRPC
+     clients can balance requests across pods themselves (16.3). */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "microservice.name" . }}-headless
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+spec:
+  clusterIP: None
+  selector:
+    {{- include "microservice.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.service.httpPort }}
+      targetPort: http
+    {{- if .Values.ports.grpc }}
+    - name: grpc
+      port: {{ .Values.ports.grpc }}
+      targetPort: grpc
+      appProtocol: kubernetes.io/h2c
+    {{- end }}
+{{- end }}

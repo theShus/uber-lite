@@ -26,3 +26,7 @@ gateway:
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8100"
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: /status/ready
+  env:
+    real_ip_header: CF-Connecting-IP # this passes User IP instead of cloud flare tunnel ip, so our Rate Limit plugin works properly
+    trusted_ips: 10.0.0.0/16   # the VPC, where cloudflared runs; never 0.0.0.0/0
+    real_ip_recursive: "off"

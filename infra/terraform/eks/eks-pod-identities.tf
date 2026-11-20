@@ -6,10 +6,16 @@ data "terraform_remote_state" "dns" {
   config  = { bucket = var.state_bucket, key = "dns/terraform.tfstate", region = var.region }
 }
 
+data "aws_caller_identity" "current" {}
+
 locals {
   zone_id  = data.terraform_remote_state.dns.outputs.zone_id
   zone_arn = "arn:aws:route53:::hostedzone/${local.zone_id}"
+
+  # for ESO for secret manger
+  arn_prefix = "${var.region}:${data.aws_caller_identity.current.account_id}"
 }
+
 
 module "lbc_pod_identity" {
   source  = "terraform-aws-modules/eks-pod-identity/aws"
@@ -63,6 +69,32 @@ module "external_dns_pod_identity" {
       cluster_name    = "${module.eks.cluster_name}"
       namespace       = "external-dns"
       service_account = "external-dns"
+    }
+  }
+}
+
+
+module "external_secrets_pod_identity" {
+  source  = "terraform-aws-modules/eks-pod-identity/aws"
+  version = "2.9.0"
+
+  name                           = "${local.name}-external-secrets"
+  use_name_prefix                = false
+  policy_name_prefix             = "${local.name}-"
+  attach_external_secrets_policy = true
+  external_secrets_secrets_manager_arns = [
+    "arn:aws:secretsmanager:${local.arn_prefix}:secret:uber-lite/${var.env}/*",
+    "arn:aws:secretsmanager:${local.arn_prefix}:secret:rds!db-*", # RDS-managed master secrets: their names are generated
+  ]
+  external_secrets_ssm_parameter_arns = [
+    "arn:aws:ssm:${local.arn_prefix}:parameter/uber-lite/${var.env}/*",
+  ]
+
+  associations = {
+    this = {
+      cluster_name    = module.eks.cluster_name
+      namespace       = "external-secrets"
+      service_account = "external-secrets"
     }
   }
 }

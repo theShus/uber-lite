@@ -57,7 +57,7 @@ jobs:
 
       - if: inputs.push
         name: docker login to ECR (ecr:GetAuthorizationToken)
-        uses: aws-actions/amazon-ecr-login@v2.1.7
+        uses: aws-actions/amazon-ecr-login@v2.2.0
 
       - if: inputs.push
         id: meta

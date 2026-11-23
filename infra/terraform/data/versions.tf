@@ -11,7 +11,7 @@ terraform {
 }
 
 provider "aws" {
-  region = ${var.region}
+  region = var.region
   default_tags {
     tags = { project = "uber-lite", layer = "data", env = var.env, owner = "luka", managed-by = "terraform", ttl = "session" }
   }

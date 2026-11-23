@@ -26,14 +26,17 @@ ENV     ?= prod
 REGION  := eu-central-1
 CLUSTER := ul-$(ENV)
 EKS_DIR := $(TF_DIR)/eks
+DATA_DIR := $(TF_DIR)/data
+# the state bucket, read from backend.hcl so its name never lands in Git
+BUCKET   := $(shell grep bucket $(TF_DIR)/backend.hcl | cut -d'"' -f2)
 
 # stop before anything touches AWS or state if ENV is a typo (ENV=prdo)
 guard-env:
 	@case "$(ENV)" in qa|prod) ;; *) echo "ENV must be qa or prod, not '$(ENV)'"; exit 1 ;; esac
 
 # 05.6's pattern rules don't know about environments: never use them for eks.
-tf-init-eks tf-plan-eks tf-apply-eks tf-destroy-eks:
-	@echo "The eks layer has one state per environment: use 'make eks-up ENV=…' or 'make eks-down ENV=…'"; exit 1
+tf-init-eks tf-plan-eks tf-apply-eks tf-destroy-eks tf-init-data tf-plan-data tf-apply-data tf-destroy-data:
+	@echo "eks and data have one state per environment: use 'make up/down ENV=…' or the eks-/data- targets"; exit 1
 
 # runs before every eks target: point the folder at THIS env's state (-reconfigure),
 # and rewrite terraform.tfvars with today's home IP
@@ -41,6 +44,17 @@ eks-init: guard-env
 	$(TF) -chdir=$(EKS_DIR) init -input=false -reconfigure \
 	  -backend-config=../backend.hcl -backend-config=key=eks/$(ENV)/terraform.tfstate
 	tools/write-eks-tfvars.sh $(EKS_DIR)/terraform.tfvars
+
+data-init: guard-env
+	$(TF) -chdir=$(DATA_DIR) init -input=false -reconfigure \
+	  -backend-config=../backend.hcl -backend-config=key=data/$(ENV)/terraform.tfstate
+
+# RDS + the services' secrets (17.3); built next to eks-up, not after it
+data-up: data-init
+	tools/tf-apply-safe.sh $(DATA_DIR) -var-file=$(ENV).tfvars -var state_bucket=$(BUCKET)
+
+data-down: data-init
+	$(TF) -chdir=$(DATA_DIR) destroy -input=false -auto-approve -var-file=$(ENV).tfvars -var state_bucket=$(BUCKET)
 
 # ---- up ----------------------------------------------------------------------
 # network with fck-nat; tf-apply-safe refuses if the plan deletes anything
@@ -65,7 +79,7 @@ app-up: guard-env
 up: guard-env
 	@date '+== up $(ENV): start %T'
 	$(MAKE) network-up
-	$(MAKE) eks-up
+	$(MAKE) -j2 --output-sync=line eks-up data-up	
 	$(MAKE) platform-up
 	$(MAKE) app-up
 	@date '+== up $(ENV): done %T'
@@ -81,20 +95,23 @@ eks-down: eks-init
 	-kubectl config delete-context $(ENV)
 
 # destroy the network only if no other cluster still runs in it ($$ : a literal $ for the shell)
+# network-down: keep the network while a cluster OR a database still uses it
 network-down: tf-init-network
-	@if [ -n "$$(aws eks list-clusters --region $(REGION) --query 'clusters[]' --output text)" ]; then \
-	  echo "== keeping the network: another cluster still uses it"; \
+	@if [ -n "$$(aws eks list-clusters --region $(REGION) --query 'clusters[]' --output text)" ] || \
+	    [ -n "$$(aws rds describe-db-instances --region $(REGION) --query 'DBInstances[].DBInstanceIdentifier' --output text)" ]; then \
+	  echo "== keeping the network: a cluster or a database still uses it"; \
 	else \
 	  $(TF) -chdir=$(TF_DIR)/network destroy -input=false -auto-approve; \
 	fi
 
+
 # the whole chain, timed, ending with the billing check
 down: guard-env
 	@date '+== down $(ENV): start %T'
-	$(MAKE) eks-down
+	$(MAKE) -j2 --output-sync=line eks-down data-down
 	$(MAKE) network-down
 	tools/whats-running.sh $(REGION) || echo "!! something is still billing: read the ✗ lines above"
 	@date '+== down $(ENV): done %T'
 
 # these targets are commands, not files: always run them
-.PHONY: guard-env eks-init network-up eks-up platform-up up eks-down network-down down
+.PHONY: guard-env eks-init network-up eks-up platform-up up eks-down network-down down data-init data-up data-down

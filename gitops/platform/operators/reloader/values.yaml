@@ -1,0 +1,10 @@
+# reloader chart 2.2.21: rolls a Deployment when a Secret/ConfigMap it uses changes
+
+# when we update a secert, the SEO will pull the secert again into the cluster but pods still use the old one
+# pods keep the secrets locked untill they redeploy and pick up new one
+# reloader will upate some annotation in the pod yaml and do a redeploy so they pick up the new secret
+reloader:
+  deployment:
+    resources:
+      requests: {cpu: 10m, memory: 64Mi}
+      limits: {memory: 128Mi}

@@ -25,6 +25,17 @@ h upgrade --install aws-load-balancer-controller aws-load-balancer-controller \
   --set clusterName="$CLUSTER" --set region="$REGION" \
   --set vpcId="$(terraform -chdir=infra/terraform/network output -raw vpc_id)" --wait
 
+echo "== External Secrets 2.15.0 + Reloader 2.2.21 (Pod Identity role: eks layer)"
+h upgrade --install external-secrets external-secrets --repo https://charts.external-secrets.io \
+  --version 2.15.0 -n external-secrets --create-namespace \
+  -f gitops/platform/operators/external-secrets/values.yaml --wait
+h upgrade --install reloader reloader --repo https://stakater.github.io/stakater-charts \
+  --version 2.2.21 -n reloader --create-namespace \
+  -f gitops/platform/operators/reloader/values.yaml --wait
+# --wait above: the CRDs and the webhook must be up before a store goes through admission
+k apply -f gitops/platform/secrets/cluster-secret-stores-$ENV.yaml
+
+
 echo "== Gateway API CRDs v1.3.0 (what KIC 3.5 is built against)"
 k apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
 

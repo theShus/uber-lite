@@ -1,0 +1,15 @@
+# external-secrets chart 2.15.0
+installCRDs: true
+serviceAccount:
+  name: external-secrets        # must match the Pod Identity association (eks-pod-identities.tf)
+resources:
+  requests: {cpu: 20m, memory: 64Mi}
+  limits: {memory: 192Mi}
+webhook:
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 96Mi}
+certController:
+  resources:
+    requests: {cpu: 10m, memory: 32Mi}
+    limits: {memory: 96Mi}

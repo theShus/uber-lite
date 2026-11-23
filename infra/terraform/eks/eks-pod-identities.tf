@@ -84,8 +84,8 @@ module "external_secrets_pod_identity" {
   attach_external_secrets_policy = true
   external_secrets_secrets_manager_arns = [
     "arn:aws:secretsmanager:${local.arn_prefix}:secret:uber-lite/${var.env}/*",
-    "arn:aws:secretsmanager:${local.arn_prefix}:secret:rds!db-*", # RDS-managed master secrets: their names are generated
-  ]
+    "arn:aws:secretsmanager:${local.arn_prefix}:secret:rds!db-*", # this a pattern and not a direct arn load reference from data, because that would make EKS terra dependent on Data terra, which we do not want.
+  ] 
   external_secrets_ssm_parameter_arns = [
     "arn:aws:ssm:${local.arn_prefix}:parameter/uber-lite/${var.env}/*",
   ]

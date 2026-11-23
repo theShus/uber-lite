@@ -1,0 +1,6 @@
+# prod's data services: dev's, minus Postgres (RDS on prod)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../base
+

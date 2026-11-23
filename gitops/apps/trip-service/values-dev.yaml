@@ -3,3 +3,7 @@ image:
   tag: dev
 autoscaling:
   minReplicas: 1
+
+networkPolicy:
+  extraAllowTo:
+    - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}

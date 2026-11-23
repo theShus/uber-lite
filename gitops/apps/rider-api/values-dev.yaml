@@ -6,3 +6,7 @@ autoscaling:
 
 route:
   hostnames: ["api.dev.shus.world"]
+
+networkPolicy:
+  extraAllowTo:
+    - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}

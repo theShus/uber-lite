@@ -72,9 +72,8 @@ h upgrade --install external-dns external-dns --repo https://kubernetes-sigs.git
 echo "== cloudflared (the tunnel ul-$ENV is the permanent 'tunnel' layer; here only its connectors)"
 if [ "$ENV" = prod ]; then
   k apply -k gitops/platform/namespaces/cloudflared
-  k -n cloudflared create secret generic cloudflared-token \
-    --from-file=token=<(terraform -chdir=infra/terraform/tunnel output -raw tunnel_token) \
-    --dry-run=client -o yaml | k apply -f -
+  k apply -f gitops/platform/secrets/cloudflared-externalsecret.yaml
+  k -n cloudflared wait externalsecret/cloudflared-token --for=condition=Ready --timeout=2m
   k apply -k gitops/platform/cloudflared
   k -n cloudflared rollout status deployment/cloudflared --timeout=3m
 fi

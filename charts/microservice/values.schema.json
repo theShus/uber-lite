@@ -115,7 +115,8 @@
       "properties": {
         "enabled": {"type": "boolean"},
         "allowFrom": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
-        "allowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}}
+        "allowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
+        "extraAllowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}}
       },
       "additionalProperties": false
     },

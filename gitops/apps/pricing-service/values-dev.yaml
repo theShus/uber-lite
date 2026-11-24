@@ -6,3 +6,5 @@ autoscaling:
 
 route:
   hostnames: ["pricing.dev.shus.world"]
+
+pdb: {enabled: false}

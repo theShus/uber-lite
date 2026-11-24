@@ -7,8 +7,8 @@ variable "env" {
 }
 
 variable "region" {
-    type = string
-    default = "eu-central-1"
+  type    = string
+  default = "eu-central-1"
 }
 
 variable "state_bucket" {

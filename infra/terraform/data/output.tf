@@ -1,5 +1,5 @@
 output "address" { value = aws_db_instance.this.address } # dns name of RDS
-output "port" { value = aws_db_instance.this.port } # postgres port
+output "port" { value = aws_db_instance.this.port }       # postgres port
 
 output "master_secret_arn" { # master user creds
   description = "The RDS-managed master password. Only the db-bootstrap Job reads it (17.5)"

@@ -1,20 +1,19 @@
-
 data "terraform_remote_state" "network" {
-    backend = "s3"
-    config = { bucket = var.state_bucket, key = "network/terraform.tfstate", region = var.region }
+  backend = "s3"
+  config  = { bucket = var.state_bucket, key = "network/terraform.tfstate", region = var.region }
 }
 
 locals {
-    name = "ul-${var.env}"
-    net = data.terraform_remote_state.network.outputs
-    # each service own its own db so services cant read each others dbs, all on one server, no need for each db to have its own server
-    databases = { rides = "rider-api", trips = "trip-service", payments = "payment-service" }
+  name = "ul-${var.env}"
+  net  = data.terraform_remote_state.network.outputs
+  # each service own its own db so services cant read each others dbs, all on one server, no need for each db to have its own server
+  databases = { rides = "rider-api", trips = "trip-service", payments = "payment-service" }
 }
 
 # The cluster's subnets: nodes, and pods (the VPC CNI gives them addresses from here)
 data "aws_subnet" "private" {
   for_each = toset(local.net.private_subnet_ids)
-  id = each.value
+  id       = each.value
 }
 
 # this groups AZs where AWS will place EINs for your RDS, aka you pick with AZs/Subnet will hold your RDS DBs. Like NodeGroup for EKS.
@@ -30,7 +29,7 @@ resource "aws_security_group" "db" {
   # No egress rules: Terraform removes AWS's default allow-all. Replies to allowed connections
 }
 
-# we open the ingress to all IPs from the priv subnets, so we take the entire cidr block. 
+# we open the ingress to all IPs from the priv subnets, so we take the entire cidr block.
 # if we want to then alter allow access to RDS for only specific pods we will do one of the following:
 # 1. create a NetworkPolicy egress for only those 3
 # 2. instead of reg SG we make SecurityGroup for Pods, but this is not too good because then we bind the terraform layer with the eks layer (need pod name)
@@ -64,7 +63,6 @@ resource "aws_db_parameter_group" "this" {
     create_before_destroy = true # a major upgrade needs a new family: create the new group first
   }
 }
-
 
 # Lab trade-offs, reviewed like code. Each expires at the end of the track.
 # trivy:ignore:AWS-0077:exp:2027-01-31 -- 1-day backups: the database is rebuilt every session; production keeps 7-35 days

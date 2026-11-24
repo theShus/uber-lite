@@ -1,10 +1,10 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-resources: 
+resources:
   - ../base
 
-# replace host names for env 
+# replace host names for env
 
 # add annotations for cert manager, it takes the name of the cert issuer from the annotations and finds it
 # then it requests a cert from the ClusterIssuer we declared in gitops\platform\cert-manager
@@ -24,7 +24,7 @@ patches:
       - op: replace
         path: /spec/listeners/1/tls/certificateRefs/0/name
         value: "aws-wildcard-tls"
-      - op: add 
+      - op: add
         path: /metadata/annotations
         value:
           cert-manager.io/cluster-issuer: letsencrypt-prod

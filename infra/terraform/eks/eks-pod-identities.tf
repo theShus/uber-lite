@@ -28,7 +28,7 @@ module "lbc_pod_identity" {
 
   associations = {
     this = {
-      cluster_name    = "${module.eks.cluster_name}"
+      cluster_name    = module.eks.cluster_name
       namespace       = "kube-system"
       service_account = "aws-load-balancer-controller"
     }
@@ -47,7 +47,7 @@ module "cert_manager_pod_identity" {
 
   associations = {
     this = {
-      cluster_name    = "${module.eks.cluster_name}"
+      cluster_name    = module.eks.cluster_name
       namespace       = "cert-manager"
       service_account = "cert-manager"
     }
@@ -66,7 +66,7 @@ module "external_dns_pod_identity" {
 
   associations = {
     this = {
-      cluster_name    = "${module.eks.cluster_name}"
+      cluster_name    = module.eks.cluster_name
       namespace       = "external-dns"
       service_account = "external-dns"
     }
@@ -85,7 +85,7 @@ module "external_secrets_pod_identity" {
   external_secrets_secrets_manager_arns = [
     "arn:aws:secretsmanager:${local.arn_prefix}:secret:uber-lite/${var.env}/*",
     "arn:aws:secretsmanager:${local.arn_prefix}:secret:rds!db-*", # this a pattern and not a direct arn load reference from data, because that would make EKS terra dependent on Data terra, which we do not want.
-  ] 
+  ]
   external_secrets_ssm_parameter_arns = [
     "arn:aws:ssm:${local.arn_prefix}:parameter/uber-lite/${var.env}/*",
   ]

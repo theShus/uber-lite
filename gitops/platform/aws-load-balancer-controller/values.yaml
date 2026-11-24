@@ -5,8 +5,8 @@ podDisruptionBudget:
   maxUnavailable: 1
 resources:
   requests:
-      cpu: 50m
-      memory: 128Mi
+    cpu: 50m
+    memory: 128Mi
   limits:
     memory: 256Mi
 defaultTargetType: ip                  # NLB sends traffic directly to the pods (ip instead of instance type)

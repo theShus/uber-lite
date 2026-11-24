@@ -8,7 +8,7 @@ env:
 sources:
   - gateway-httproute # which routes to watch for to create records
   - gateway-grpcroute
-policy: sync  # this is what the extDns controller can do, create-only, upsert-only (create and update), sync (create, update, delete records) 
+policy: sync  # this is what the extDns controller can do, create-only, upsert-only (create and update), sync (create, update, delete records)
 registry: txt # writes who made the record in the txt field
 domainFilters: ["aws.shus.world"] # we make DNS records FROM KONG ROUTES, that match this root, our api.aws.shus.world will make the api record in HostedZone
 serviceAccount:

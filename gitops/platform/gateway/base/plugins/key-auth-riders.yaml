@@ -6,7 +6,7 @@
 
 # the plugin knows what secrets to look at because they are made using, plugin match "--local konghq.com/credential=key-auth "
 
-# secrets are bound to Consumers useing the credentials: field, 
+# secrets are bound to Consumers useing the credentials: field,
 # flow: http request -> route -> KongPlugin check header secret agains his list -> match -> secret has key to consumer -> request with now consumer let through
 
 

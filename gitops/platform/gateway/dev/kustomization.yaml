@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-resources: 
+resources:
   - ../base
 
 patches:
@@ -18,7 +18,7 @@ patches:
       - op: replace
         path: /spec/listeners/1/tls/certificateRefs/0/name
         value: "dev-wildcard-tls"
-      - op: add 
+      - op: add
         path: /metadata/annotations
         value:
           cert-manager.io/cluster-issuer: letsencrypt-dev

@@ -10,10 +10,10 @@ metadata:
 plugin: rate-limiting
 config:
   minute: 30
-  limit_by: ip 
+  limit_by: ip
   policy: redis
   redis:
     host: valkey.data.svc.cluster.local # DNS name of Valkey Service
     port: 6379
     database: 1
-  fault_tolerant: true # if valkey is down the requests will still pass 
+  fault_tolerant: true # if valkey is down the requests will still pass

@@ -1,6 +1,6 @@
 -- One login role and one database per service on RDS. Idempotent: safe to re-run.
 -- \getenv load the value of the secret that the job yaml has imported as env vars
-\getenv rides_pw RIDES_PW 
+\getenv rides_pw RIDES_PW
 \getenv trips_pw TRIPS_PW
 \getenv payments_pw PAYMENTS_PW
 

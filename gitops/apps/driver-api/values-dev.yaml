@@ -6,4 +6,3 @@ autoscaling:
 
 route:
   hostnames: ["api.dev.shus.world"]
-

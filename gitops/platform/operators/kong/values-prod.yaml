@@ -20,7 +20,8 @@ gateway:
     loadBalancerClass: service.k8s.aws/nlb      # explicit owner: LBC, not the in-tree cloud controller
     annotations:
     # service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing # allows public internet - this was before CF tunnel
-      service.beta.kubernetes.io/aws-load-balancer-scheme: internal # we no longer use public NLB because of CF tunnel pods, this is kept only for internal traffic now
+      # we no longer use a public NLB because of the CF tunnel pods; it is kept only for internal traffic now
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
       service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip # send directly to pod ips, not instance through NodePort
       service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true,deregistration_delay.timeout_seconds=30
       service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http

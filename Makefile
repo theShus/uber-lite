@@ -79,7 +79,7 @@ app-up: guard-env
 up: guard-env
 	@date '+== up $(ENV): start %T'
 	$(MAKE) network-up
-	$(MAKE) -j2 --output-sync=line eks-up data-up	
+	$(MAKE) -j2 --output-sync=line eks-up data-up
 	$(MAKE) platform-up
 	$(MAKE) app-up
 	@date '+== up $(ENV): done %T'

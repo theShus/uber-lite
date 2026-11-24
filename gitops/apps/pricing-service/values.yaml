@@ -29,4 +29,3 @@ route:
   kind: GRPCRoute
   gateway:
     sectionName: https
-

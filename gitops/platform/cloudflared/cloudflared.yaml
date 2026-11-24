@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: cloudflared
   namespace: cloudflared
-  labels: 
+  labels:
     app.kubernetes.io/name: cloudflared
     app.kubernetes.io/part-of: uber-lite
 spec:
@@ -12,7 +12,7 @@ spec:
     matchLabels: {app.kubernetes.io/name: cloudflared}
   template:
     metadata:
-      labels: 
+      labels:
         app.kubernetes.io/name: cloudflared
         app.kubernetes.io/part-of: uber-lite
     spec:

@@ -1,0 +1,9 @@
+apiVersion: v2
+
+name: root
+
+description: A Helm chart for bootstrapping cluster with Application charts for ArgoCD, before the app charts.
+
+type: application
+
+version: 0.1.0

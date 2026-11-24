@@ -50,7 +50,7 @@ h upgrade --install kong ingress --repo https://charts.konghq.com --version 0.24
 echo "== cert-manager"
 h upgrade --install cert-manager cert-manager --repo https://charts.jetstack.io --version v1.21.2 \
   -n cert-manager --create-namespace -f gitops/platform/operators/cert-manager/values.yaml --wait
-k apply -f gitops/platform/cert-manager/clusterissuers.yaml
+k apply -f gitops/platform/cert-manager-cluster-issuers/clusterissuers.yaml
 
 echo "== the gateway's certificate: restored if we have one (before the Gateway asks for it)"
 tools/tls-restore.sh "$ENV"

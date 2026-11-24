@@ -1,0 +1,14 @@
+# dev's Argo CD: its only cluster is itself. Declared as a Secret so it carries the labels the
+# services ApplicationSet selects on (18.4). Dev runs local images, so the image prefix is empty.
+configs:
+  clusterCredentials:
+    in-cluster:
+      server: https://kubernetes.default.svc
+      labels:
+        uber-lite/env: dev
+        uber-lite/services: "true"
+      annotations:
+        uber-lite/image-prefix: ""
+      config:
+        tlsClientConfig:
+          insecure: false

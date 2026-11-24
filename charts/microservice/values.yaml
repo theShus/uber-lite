@@ -61,6 +61,7 @@ pdb:
 service:
   httpPort: 80
   annotations: {} # used for kong grcp route
+  headless: false
 
 serviceAccount:
   annotations: {}                # topic 15: AWS rola
@@ -76,6 +77,7 @@ networkPolicy:
   enabled: true
   allowFrom: []
   allowTo: []
+  extraAllowTo: []                         # appended to allowTo: per-env peers (Helm replaces lists, never merges them)
 
 migration:
   enabled: false                           # true za servise sa bazom

@@ -1,0 +1,12 @@
+cd ~/uber-lite && git pull && git status --short          # expect: clean
+cd infra/terraform/eks
+cat > terraform.tfvars <<EOF
+state_bucket        = "$(grep bucket ../backend.hcl | cut -d'"' -f2)"
+public_access_cidrs = ["$(curl -4 -s https://checkip.amazonaws.com)/32"]
+cluster_admins      = { luka = "$(aws sts get-caller-identity --query Arn --output text)" }
+EOF
+git check-ignore -v terraform.tfvars                      # must print .gitignore:33:...
+grep -c 'user/' terraform.tfvars                          # expect 1: an IAM user ARN, not assumed-role
+terraform init -backend-config=../backend.hcl -backend-config="key=eks/prod/terraform.tfstate" -reconfigure
+terraform plan -var-file=prod.tfvars -out=prod.tfplan
+terraform show -no-color prod.tfplan | grep -E '^  # ' | sed 's/ will be created//'

@@ -1,0 +1,41 @@
+suite: headless service
+templates:
+  - service-headless.yaml
+set:
+  image.repository: example/app
+tests:
+  - it: renders no headless Service by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: renders a headless Service with the grpc port when enabled
+    set:
+      service.headless: true
+      ports.grpc: 50051
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Service
+      - matchRegex:
+          path: metadata.name
+          pattern: -headless$
+      - equal:
+          path: spec.clusterIP
+          value: None
+      - contains:
+          path: spec.ports
+          content:
+            name: grpc
+            port: 50051
+            targetPort: grpc
+            appProtocol: kubernetes.io/h2c
+
+  - it: keeps only the http port for a service without grpc
+    set:
+      service.headless: true
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 1

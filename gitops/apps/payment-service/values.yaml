@@ -4,6 +4,8 @@ env:
   LOG_LEVEL: INFO
   PSP_FAILURE_RATE: "0.02"
   PSP_LATENCY_MS: "150"
+  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
+
 secretEnv:
   DATABASE_URL: {secretName: payment-service-db, key: url}
 migration:
@@ -11,4 +13,3 @@ migration:
 networkPolicy:
   allowTo:
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
-    - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}

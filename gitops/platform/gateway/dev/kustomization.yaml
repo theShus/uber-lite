@@ -1,8 +1,25 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+
 resources:
-  - gateway.yaml
-  - gatewayclass.yaml
-  - plugins/rl-drivers.yaml
-  - plugins/key-auth-riders.yaml
-  - plugins/request-id.yaml
+  - ../base
+
+patches:
+  - target:
+      kind: Gateway
+      name: uber-lite
+    patch: |-
+      - op: replace
+        path: /spec/listeners/0/hostname
+        value: "*.dev.shus.world"
+      - op: replace
+        path: /spec/listeners/1/hostname
+        value: "*.dev.shus.world"
+      - op: replace
+        path: /spec/listeners/1/tls/certificateRefs/0/name
+        value: "dev-wildcard-tls"
+      - op: add
+        path: /metadata/annotations
+        value:
+          cert-manager.io/cluster-issuer: letsencrypt-dev
+          cert-manager.io/private-key-algorithm: ECDSA

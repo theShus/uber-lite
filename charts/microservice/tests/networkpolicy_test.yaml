@@ -39,3 +39,29 @@ tests:
     asserts:
       - hasDocuments:
           count: 0
+
+  - it: appends extraAllowTo after allowTo (a per-env peer without repeating the list)
+    set:
+      networkPolicy.allowTo:
+        - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+      networkPolicy.extraAllowTo:
+        - {cidr: 10.0.200.0/23, port: 5432}
+    asserts:
+      - lengthEqual:
+          path: spec.egress
+          count: 2
+      - equal:
+          path: spec.egress[1].to[0].ipBlock.cidr
+          value: 10.0.200.0/23
+      - equal:
+          path: spec.egress[1].ports[0].port
+          value: 5432
+
+  - it: renders only allowTo when extraAllowTo is empty
+    set:
+      networkPolicy.allowTo:
+        - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+    asserts:
+      - lengthEqual:
+          path: spec.egress
+          count: 1

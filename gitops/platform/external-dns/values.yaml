@@ -1,0 +1,18 @@
+# external-dns chart 1.23.0 txtOwnerId is set per environment by platform-up.sh
+
+# ExternalDNS never connects to Kong, it watches Gateway API objects, and since Route is the GatewayAPI obj it just finds it and creates a DNS Record from it
+provider:
+  name: aws
+env:
+  - {name: AWS_DEFAULT_REGION, value: eu-central-1}   # Route 53 is global, but the SDK still wants a region
+sources:
+  - gateway-httproute # which routes to watch for to create records
+  - gateway-grpcroute
+policy: sync  # this is what the extDns controller can do, create-only, upsert-only (create and update), sync (create, update, delete records)
+registry: txt # writes who made the record in the txt field
+domainFilters: ["aws.shus.world"] # we make DNS records FROM KONG ROUTES, that match this root, our api.aws.shus.world will make the api record in HostedZone
+serviceAccount:
+  name: external-dns           # must match the Pod Identity association (pod-identity.tf)
+resources:
+  requests: {cpu: 10m, memory: 48Mi}
+  limits: {memory: 128Mi}

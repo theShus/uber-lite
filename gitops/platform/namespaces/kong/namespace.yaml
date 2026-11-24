@@ -6,3 +6,5 @@ metadata:
     app.kubernetes.io/part-of: uber-lite
     pod-security.kubernetes.io/enforce: baseline
     pod-security.kubernetes.io/warn: restricted
+    elbv2.k8s.aws/pod-readiness-gate-inject: enabled # LBC holds pod Ready until registered in NLB target group (no-op without LBC)
+                                                     # aka make sure LBC readiness probes pass until you say proxy pod ready, and send traffic to it

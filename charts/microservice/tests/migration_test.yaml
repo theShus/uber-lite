@@ -34,3 +34,19 @@ tests:
       - equal:
           path: metadata.annotations["helm.sh/hook-weight"]
           value: "-10"
+
+  - it: lets the migration reach extraAllowTo peers too (the database differs per env)
+    template: migration-networkpolicy.yaml
+    set:
+      migration.enabled: true
+      networkPolicy.allowTo:
+        - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+      networkPolicy.extraAllowTo:
+        - {cidr: 10.0.200.0/23, port: 5432}
+    asserts:
+      - lengthEqual:
+          path: spec.egress
+          count: 2
+      - equal:
+          path: spec.egress[1].to[0].ipBlock.cidr
+          value: 10.0.200.0/23

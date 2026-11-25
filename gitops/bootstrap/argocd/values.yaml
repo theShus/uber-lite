@@ -8,6 +8,7 @@ notifications:
 configs:
   params:
     server.insecure: true   # TLS ends at the port-forward or the Gateway, not at argocd-server
+    controller.diff.server.side: "true"   # diff via dry-run server-side apply: API server defaults count
   cm:
     timeout.reconciliation: 60s   # poll Git every minute (default 120s); production adds a webhook from GitHub
     # App of apps: a parent waits for a child Application's own health, wave by wave (18.3).

@@ -1,0 +1,5 @@
+networkPolicy:
+  extraAllowTo:
+    - {cidr: 10.0.200.0/23, port: 5432} # IP that was set in terraform network, this was we cover all Data Subnets, aka allow to PostgreSQL
+image:
+  digest: sha256:904d56f23ed3fc7cb8750f6e2c528b7d3ae9016b74f6d0bdbf1d5930cff90aa3

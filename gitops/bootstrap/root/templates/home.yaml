@@ -1,0 +1,73 @@
+{{- /*
+  Renders hub-only resources when .Values.home is true (dev and prod; skipped on the qa spoke):
+  - AppProject "platform" (wave -1): cluster-wide permissions for platform infrastructure components.
+  - AppProject "services" (wave -1): locked to this repo, the uber-lite namespace, and namespace-scoped resources only.
+  - Application "services" (wave 5): deploys gitops/bootstrap/services (the services ApplicationSet) onto the hub
+    after platform waves 0–4 reach Healthy.
+*/ -}}
+
+
+# Limiter for platform Application objects
+# we are allowing the platform Applications to have no restrictions, with "*"
+
+{{- if .Values.home }}
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform # <-- FIND Applications with platform in the spec.project
+  namespace: {{ .Values.argocdNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: Platform components, owned by the platform team
+  sourceRepos: ["*"]
+  destinations:
+    - server: "*"
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+# AppProject limiter for "services Application-s", the actaull app pods we are launcing using the ApplicationSet (gitops\bootstrap\services\applicationset.yaml)
+
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: services
+  namespace: {{ .Values.argocdNamespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  description: "Uber-lite's services: one namespace, this repository, nothing cluster-scoped"
+  sourceRepos:
+    - {{ .Values.repoURL }}
+  destinations:
+    - server: "*"
+      namespace: uber-lite
+  clusterResourceWhitelist: []
+---
+# Application that will launch the ApplicationSet and maintain it
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: services
+  namespace: {{ .Values.argocdNamespace }}
+  labels:
+    uber-lite/layer: services
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  project: platform
+  source:
+    repoURL: {{ .Values.repoURL }}
+    targetRevision: {{ .Values.revision }}
+    path: gitops/bootstrap/services
+  destination:
+    server: https://kubernetes.default.svc   # the ApplicationSet lives next to Argo CD, whatever it deploys to
+    namespace: {{ .Values.argocdNamespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+{{- end }}

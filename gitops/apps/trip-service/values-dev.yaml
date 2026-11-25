@@ -1,7 +1,9 @@
 # trip-service: dev (kind on the hub)
 image:
   tag: dev
-env:
-  KAFKA_BOOTSTRAP: kafka-kafka-bootstrap.data:9092
 autoscaling:
   minReplicas: 1
+
+networkPolicy:
+  extraAllowTo:
+    - {namespace: data, podLabels: {cnpg.io/cluster: postgres}, port: 5432}

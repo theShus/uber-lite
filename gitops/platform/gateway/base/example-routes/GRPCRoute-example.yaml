@@ -1,0 +1,20 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: pricing-service
+  namespace: uber-lite
+  annotations:
+    konghq.com/protocols: grpc
+  labels:
+    app.kubernetes.io/name: pricing-service
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  parentRefs:
+    - name: uber-lite # name of gateway we attach to
+      namespace: kong # NS of gateway
+      sectionName: https
+  hostnames: ["pricing.aws.shus.world"]
+  rules:
+    - backendRefs:
+        - name: pricing-service # name of the backend app Service pod we connect the route to
+          port: 50051

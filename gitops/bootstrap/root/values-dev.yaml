@@ -1,0 +1,3 @@
+# values-dev.yaml
+# dev: the kind cluster on the hub, with its own Argo CD. Nothing here comes from Terraform.
+env: dev

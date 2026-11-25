@@ -115,6 +115,19 @@ module "eks" {
       labels = { pool = "system" }
     }
   }
+
+  # Control plane -> admission webhooks on the nodes. The module opens 443/4443/6443/8443/9443/10250;
+  # Kong's KIC listens on 8080, and without this every Secret/Service write waits 10 s for it (16.3).
+  node_security_group_additional_rules = {
+    ingress_cluster_8080_kong_webhook = {
+      description                   = "Cluster API to Kong admission webhook 8080/tcp"
+      protocol                      = "tcp"
+      from_port                     = 8080
+      to_port                       = 8080
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+  }
 }
 
 # Creates a IAM role that has privs to create EBS and to attach them to node workers, we attach this to CSI in addons in EKS block

@@ -7,7 +7,7 @@ set -uo pipefail          # no -e: some kubectl calls fail on purpose (a CRD tha
 CLUSTER=${1:?usage: k8s-predestroy.sh <cluster> <context>}
 CTX=${2:?usage: k8s-predestroy.sh <cluster> <context>}
 REGION=${AWS_REGION:-eu-central-1}                  # $AWS_REGION if set, else eu-central-1
-KEEP='^(default|kube-system|kube-public|kube-node-lease|karpenter)$'   # namespaces never deleted
+KEEP='^(default|kube-system|kube-public|kube-node-lease|karpenter|external-dns)$'   # namespaces never deleted
 k() { kubectl --context "$CTX" "$@"; }              # kubectl, always against this cluster's context
 
 # no cluster: nothing inside it can own AWS resources
@@ -46,8 +46,9 @@ deletable_pvs() { k get pv -o json | jq '[.items[] | select(.spec.persistentVolu
 # Karpenter's EC2 instances, as NodeClaim objects (0 if Karpenter isn't installed)
 nodeclaims() { k get nodeclaims.karpenter.sh --no-headers 2>/dev/null | wc -l; }
 
-# 1. Stop GitOps first, or it recreates everything you delete (topic 18)
-if k get namespace argocd >/dev/null 2>&1; then
+# 1. Stop GitOps first, or it recreates everything you delete. `make down` has already
+#    uninstalled Argo CD (argocd-down, 18.5); this catches a cluster you take down by hand.
+if k -n argocd get statefulset argocd-application-controller >/dev/null 2>&1; then
   echo "== Argo CD: stopping the application controller"
   k -n argocd scale statefulset argocd-application-controller --replicas=0
 fi

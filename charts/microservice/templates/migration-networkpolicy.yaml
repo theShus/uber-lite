@@ -17,7 +17,7 @@ spec:
       app.kubernetes.io/name: {{ include "microservice.migrationName" . }}
   policyTypes: [Ingress, Egress]
   egress:
-    {{- range .Values.networkPolicy.allowTo }}
+    {{- range concat .Values.networkPolicy.allowTo .Values.networkPolicy.extraAllowTo }}
     - to:
         - {{- include "microservice.peer" . | trim | nindent 10 }}
       ports:

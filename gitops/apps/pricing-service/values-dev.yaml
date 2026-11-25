@@ -1,15 +1,8 @@
 image:
   tag: dev
 
-env:
-  VALKEY_URL: redis://valkey.data:6379/0
-
 autoscaling:
   minReplicas: 1
 
 route:
-  enabled: true
-  kind: GRPCRoute
   hostnames: ["pricing.dev.shus.world"]
-  gateway:
-    sectionName: https

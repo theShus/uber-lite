@@ -89,7 +89,8 @@
       "type": "object",
       "properties": {
         "httpPort": {"type": "integer", "minimum": 1, "maximum": 65535},
-        "annotations": {"type": "object", "additionalProperties": {"type": "string"}}
+        "annotations": {"type": "object", "additionalProperties": {"type": "string"}},
+        "headless": {"type": "boolean"}
       },
       "additionalProperties": false
     },
@@ -114,7 +115,8 @@
       "properties": {
         "enabled": {"type": "boolean"},
         "allowFrom": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
-        "allowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}}
+        "allowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}},
+        "extraAllowTo": {"type": "array", "items": {"$ref": "#/definitions/peer"}}
       },
       "additionalProperties": false
     },

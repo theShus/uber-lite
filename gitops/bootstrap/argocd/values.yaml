@@ -1,0 +1,58 @@
+# argo-cd chart 10.10.5 (Argo CD v3.5.5): the same on every cluster.
+# Per-cluster settings (the cluster Secrets, the GitOps bridge) come from Terraform (prod, qa) or values-dev.yaml.
+dex:
+  enabled: false          # no SSO in the lab: the admin user and the CLI (18.7 covers SSO)
+notifications:
+  enabled: false          # 18.7, and topic 19's deploy markers
+
+configs:
+  params:
+    server.insecure: true   # TLS ends at the port-forward or the Gateway, not at argocd-server
+    controller.diff.server.side: "true"   # diff via dry-run server-side apply: API server defaults count
+  cm: # poll Git every minute (default 120s); production adds a webhook from GitHub
+    timeout.reconciliation: 60s
+    # Teaches the parent (root) Application how to read the health of its child Applications
+    # so sync-waves actually wait for each other instead of deploying waves 0-5 all at once
+    # (Argo CD removed built-in Application health checks in v1.8).
+    #
+    # Two rules here:
+    # 1. Still syncing = Progressing: Argo CD ignores hooks (like PostSync Jobs) when calculating
+    #    an app's health. Without this, db-prod turns Healthy as soon as its ExternalSecrets are
+    #    ready, starting wave 5 (microservices) while the db-bootstrap Job is still creating DB roles.
+    # 2. Forward real child health: Once the sync finishes, pass the child's actual health status
+    #    to the parent so the next sync-wave only starts when the current wave is truly Healthy.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.operationState ~= nil and obj.status.operationState.phase == "Running" then
+        hs.message = "still syncing: " .. (obj.status.operationState.message or "")
+        return hs
+      end
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+      return hs
+controller:
+  resources:
+    requests: {cpu: 100m, memory: 384Mi}
+    limits: {memory: 768Mi}
+repoServer:
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 512Mi}
+server:
+  resources:
+    requests: {cpu: 20m, memory: 64Mi}
+    limits: {memory: 256Mi}
+applicationSet:
+  resources:
+    requests: {cpu: 20m, memory: 64Mi}
+    limits: {memory: 256Mi}
+redis:
+  resources:
+    requests: {cpu: 20m, memory: 32Mi}
+    limits: {memory: 128Mi}

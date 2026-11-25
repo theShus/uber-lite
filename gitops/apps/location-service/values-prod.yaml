@@ -1,0 +1,4 @@
+# prod: nothing differs from values.yaml. image.repository = cluster image prefix + service name (18.4)
+# image.digest is pinned here: a deploy is a PR (18.5)
+image:
+  digest: sha256:bb55348e74e080077997de048ee8d1cb9333bfd8c4bdcb448c133241d56aa7ca

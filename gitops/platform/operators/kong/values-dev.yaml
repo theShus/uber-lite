@@ -1,0 +1,8 @@
+# kong/ingress chart 0.24.0: Kong Ingress Controller 3.5 + Kong Gateway 3.9 (DB-less)
+gateway:
+  proxy:
+    type: NodePort          # dev: kind mapira hub 80/443 na ove portove (kind-dev.yaml)
+    http:
+      nodePort: 30080
+    tls:
+      nodePort: 30443

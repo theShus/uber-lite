@@ -1,0 +1,29 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rider-api-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/theShus/uber-lite.git
+    targetRevision: lab-18
+    path: charts/microservice
+    helm:
+      releaseName: rider-api
+      valueFiles:
+        - ../../gitops/apps/rider-api/values.yaml
+        - ../../gitops/apps/rider-api/values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: uber-lite
+  ignoreDifferences:
+    - group: apps
+      kind: Deployment
+      jsonPointers: [/spec/replicas]
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - RespectIgnoreDifferences=true

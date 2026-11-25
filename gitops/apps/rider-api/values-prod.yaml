@@ -1,0 +1,8 @@
+route:
+  hostnames: ["api.aws.shus.world"]
+
+networkPolicy:
+  extraAllowTo:
+    - {cidr: 10.0.200.0/23, port: 5432} # IP that was set in terraform network, this was we cover all Data Subnets, aka allow to PostgreSQL
+image:
+  digest: sha256:59393b8e446cef5373379cb3e96a90c1f5081183af66a7f7a50cf42c744abfee

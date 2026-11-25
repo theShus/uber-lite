@@ -1,0 +1,4 @@
+route:
+  hostnames: ["api.aws.shus.world"]
+image:
+  digest: sha256:acb498a23dd6207dcfcca0c2bb45912505c2c3bd60d01c6c3948bc0231576a5e

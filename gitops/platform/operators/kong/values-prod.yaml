@@ -1,0 +1,33 @@
+# Kong behind an LBC-managed NLB (16.3)
+gateway:
+  autoscaling: # HPA for kong proxy pods
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target: {type: Utilization, averageUtilization: 70}
+  podDisruptionBudget:          # a node drain never takes both proxies at once
+    enabled: true
+    maxUnavailable: 1
+  resources:                    # the HPA computes % of the CPU *request*: no request, no HPA
+    requests: {cpu: 200m, memory: 256Mi}
+    limits: {memory: 512Mi}
+  proxy:
+    type: LoadBalancer
+    loadBalancerClass: service.k8s.aws/nlb      # explicit owner: LBC, not the in-tree cloud controller
+    annotations:
+    # service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing # allows public internet - this was before CF tunnel
+      # we no longer use a public NLB because of the CF tunnel pods; it is kept only for internal traffic now
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internal
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip # send directly to pod ips, not instance through NodePort
+      service.beta.kubernetes.io/aws-load-balancer-target-group-attributes: preserve_client_ip.enabled=true,deregistration_delay.timeout_seconds=30
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-protocol: http
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-port: "8100"
+      service.beta.kubernetes.io/aws-load-balancer-healthcheck-path: /status/ready
+  env: # this passes User IP instead of cloud flare tunnel ip, so our Rate Limit plugin works properly
+    real_ip_header: CF-Connecting-IP # CF knows the real user IP, and stores it in this header, we just say to kong, real ip is here
+    trusted_ips: 10.0.0.0/16   # the VPC, where cloudflared runs; never 0.0.0.0/0
+    real_ip_recursive: "off" # we take the ip as it is, no changes to it

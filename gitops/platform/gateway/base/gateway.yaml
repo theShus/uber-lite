@@ -1,0 +1,35 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: uber-lite
+  namespace: kong
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod written here just so i dont forget it exists, its added through the kustomization-overlay.yaml
+  #   cert-manager.io/private-key-algorithm: ECDSA
+spec:
+  gatewayClassName: kong
+  listeners:
+    - name: http
+      port: 80
+      protocol: HTTP
+      hostname: "*.placeholder.invalid" # hostname placeholder
+      allowedRoutes:
+        namespaces:
+          from: Same # same means only from Kong NS, because we will use annotation to set redirect to HTTPS
+    - name: https
+      port: 443
+      protocol: HTTPS
+      hostname: "*.placeholder.invalid" # hostname placeholder
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - kind: Secret
+            name: <env>-wildcard-tls # place holder for secret name
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

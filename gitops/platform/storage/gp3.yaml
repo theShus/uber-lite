@@ -5,6 +5,7 @@ metadata:
   labels:
     app.kubernetes.io/part-of: uber-lite-platform
   annotations:
+    # THIS YAML tells eks what SSD to use for storage for our pods (e.g. PVC for Valkey) unless they ask for else
     storageclass.kubernetes.io/is-default-class: "true"
 provisioner: ebs.csi.aws.com
 parameters:

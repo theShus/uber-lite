@@ -6,7 +6,9 @@
     after platform waves 0–4 reach Healthy.
 */ -}}
 
-# we are allowing the platform Applications to have no restrictions, with * 
+
+# Limiter for platform Application objects
+# we are allowing the platform Applications to have no restrictions, with "*" 
 
 {{- if .Values.home }}
 apiVersion: argoproj.io/v1alpha1
@@ -26,7 +28,7 @@ spec:
     - group: "*"
       kind: "*"
 ---
-# the services Application we are limiting to only the uber-lite NS (app bellow)
+# AppProject limiter for "services Application-s", the actaull app pods we are launcing using the ApplicationSet (gitops\bootstrap\services\applicationset.yaml)
 
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
@@ -44,6 +46,8 @@ spec:
       namespace: uber-lite
   clusterResourceWhitelist: []
 ---
+# Application that will launch the ApplicationSet and maintain it
+
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

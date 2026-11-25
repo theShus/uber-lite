@@ -1,0 +1,74 @@
+# ApplicationSet is like a Deployment for Application-s. (but its actually a controller for combining)
+# You give a template and input variables and it will combine them into a Application object
+
+# Generators - they get and input vars from some location, based on location you use a diff generator
+# in this example we use clusters: gen to say to waht clusters we want to install Applications to and
+# git: generator to get the "apps" folders, which are the main value.yaml-s for our template
+# IMPORTANT - git gen doesnt literally load in value data, just gives repo link, so we use {{ .path.basename }} to load them
+
+# tempalte.spec is where we say what "template" we will use for the Application-s
+# in this example we are using the charts/microservice repo from the main branch on uber-lite git
+
+# and we are restricting it to uber-lite NS with AppProject in spec.project (from gitops\bootstrap\root\templates\home.yaml)
+
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: services
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]     # a typo in a template field fails loudly
+  syncPolicy:
+    preserveResourcesOnDeletion: true         # no resources finalizer: a vanished Application orphans its objects
+  generators:
+    - matrix:
+        generators:
+          - clusters:
+              selector:
+                matchLabels:
+                  uber-lite/services: "true"
+          - git:
+              repoURL: https://github.com/theShus/uber-lite.git
+              revision: main
+              directories:
+                - path: gitops/apps/*
+  template:
+    metadata:
+      name: '{{ .path.basename }}-{{ index .metadata.labels "uber-lite/env" }}'
+      labels:
+        uber-lite/env: '{{ index .metadata.labels "uber-lite/env" }}'
+        uber-lite/layer: services
+    spec:
+      project: services
+      source:
+        repoURL: https://github.com/theShus/uber-lite.git
+        targetRevision: main
+        path: charts/microservice
+        helm:
+          releaseName: '{{ .path.basename }}'
+          valueFiles:                            # relative to the chart's folder, inside this repository
+            - '../../gitops/apps/{{ .path.basename }}/values.yaml'
+            - '../../gitops/apps/{{ .path.basename }}/values-{{ index .metadata.labels "uber-lite/env" }}.yaml'
+          parameters:
+            - name: image.repository             # dev: "rider-api" (a local image); qa/prod: <registry>/uber-lite/rider-api
+              value: '{{ index .metadata.annotations "uber-lite/image-prefix" }}{{ .path.basename }}'
+      destination:
+        server: '{{ .server }}'
+        namespace: uber-lite
+      ignoreDifferences:
+        - group: apps
+          kind: Deployment
+          jsonPointers: [/spec/replicas]         # an HPA or KEDA owns the replica count (topic 21)
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - RespectIgnoreDifferences=true
+        retry:
+          limit: 5
+          backoff:
+            duration: 10s
+            factor: 2
+            maxDuration: 3m

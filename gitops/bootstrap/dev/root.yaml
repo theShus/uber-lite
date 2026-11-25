@@ -2,6 +2,9 @@
 # Renders the gitops/bootstrap/root chart with values-dev.yaml to create the AppProjects (wave -1),
 # all dev platform components in sync-wave order (waves 0–3), and the services Application (wave 5).
 
+# root.yaml --> root.templates --> Applicatio for each platform comp (platform pods from platform.yaml + values.components)
+#                              --> services Application ->  Applicatio for each app pod (from applicationset.yaml + git apps folder)
+
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

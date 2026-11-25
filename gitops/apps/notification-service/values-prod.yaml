@@ -1,1 +1,4 @@
-# prod: nothing differs from values.yaml (image comes from app-up.sh by digest)
+# prod: nothing differs from values.yaml. image.repository = cluster image prefix + service name (18.4)
+# image.digest is pinned here: a deploy is a PR (18.5)
+image:
+  digest: sha256:a0656458bcbb564ce3c7dde9a95046c182decb3d5b5080b6f9b8fc66c253cb3a

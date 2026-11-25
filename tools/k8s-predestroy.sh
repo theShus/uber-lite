@@ -46,8 +46,9 @@ deletable_pvs() { k get pv -o json | jq '[.items[] | select(.spec.persistentVolu
 # Karpenter's EC2 instances, as NodeClaim objects (0 if Karpenter isn't installed)
 nodeclaims() { k get nodeclaims.karpenter.sh --no-headers 2>/dev/null | wc -l; }
 
-# 1. Stop GitOps first, or it recreates everything you delete (topic 18)
-if k get namespace argocd >/dev/null 2>&1; then
+# 1. Stop GitOps first, or it recreates everything you delete. `make down` has already
+#    uninstalled Argo CD (argocd-down, 18.5); this catches a cluster you take down by hand.
+if k -n argocd get statefulset argocd-application-controller >/dev/null 2>&1; then
   echo "== Argo CD: stopping the application controller"
   k -n argocd scale statefulset argocd-application-controller --replicas=0
 fi

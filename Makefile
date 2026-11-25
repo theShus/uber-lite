@@ -29,6 +29,7 @@ EKS_DIR := $(TF_DIR)/eks
 DATA_DIR := $(TF_DIR)/data
 # the state bucket, read from backend.hcl so its name never lands in Git
 BUCKET   := $(shell grep bucket $(TF_DIR)/backend.hcl | cut -d'"' -f2)
+ARGOCD_DIR := $(TF_DIR)/argocd
 
 # stop before anything touches AWS or state if ENV is a typo (ENV=prdo)
 guard-env:
@@ -66,30 +67,44 @@ eks-up: eks-init
 	tools/tf-apply-safe.sh $(EKS_DIR) -var-file=$(ENV).tfvars
 	aws eks update-kubeconfig --name $(CLUSTER) --region $(REGION) --alias $(ENV)
 
-# what lives inside the cluster: storage, LBC, Kong + gateway, data layer (topic 18: Argo CD's bootstrap)
-platform-up: guard-env
-	kubectl --context $(ENV) wait --for=condition=Ready nodes --all --timeout=5m
-	tools/platform-up.sh $(ENV)
-
-# every service from its newest sha- image in ECR, by digest (topic 18: Argo CD)
-app-up: guard-env
-	tools/app-up.sh $(ENV)
-
-# the whole chain, timed. $(MAKE) runs a sub-make, and ENV is passed down to it
+# the whole chain, timed. $(MAKE) runs a sub-make, and ENV is passed down to it.
+# Everything inside the cluster is Argo CD's job (18.5): the certificate goes back first (a key can't live in Git),
+# then argocd-up installs Argo CD and the root, and waits until every Application is Synced and Healthy.
 up: guard-env
 	@date '+== up $(ENV): start %T'
 	$(MAKE) network-up
 	$(MAKE) -j2 --output-sync=line eks-up data-up
-	$(MAKE) platform-up
-	$(MAKE) app-up
+	tools/tls-restore.sh $(ENV)
+	@if [ "$(ENV)" = prod ]; then $(MAKE) argocd-up; else echo "== $(ENV) has no Argo CD of its own: 18.6 makes it a spoke of prod's"; fi
 	@date '+== up $(ENV): done %T'
+
+# ---- Argo CD on prod, the hub (18.5) ---------------------------------------------
+# argocd-init has no -reconfigure: this layer has one state, so the folder never switches keys (unlike eks and data)
+argocd-init:
+	$(TF) -chdir=$(ARGOCD_DIR) init -input=false -backend-config=../backend.hcl
+	@printf 'state_bucket = "%s"\nrepo_url     = "%s"\n' \
+	  "$$(grep bucket $(TF_DIR)/backend.hcl | cut -d'"' -f2)" \
+	  "$$(yq '.repoURL' gitops/bootstrap/root/values.yaml)" > $(ARGOCD_DIR)/terraform.tfvars
+
+argocd-up: argocd-init
+	tools/tf-apply-safe.sh $(ARGOCD_DIR)
+	tools/argocd-wait.sh prod
+
+argocd-down: argocd-init
+	@if aws eks describe-cluster --name ul-prod --region $(REGION) >/dev/null 2>&1; then \
+	  $(TF) -chdir=$(ARGOCD_DIR) destroy -input=false -auto-approve; \
+	else \
+	  echo "== ul-prod doesn't exist: no Argo CD to uninstall"; \
+	fi
 
 # ---- down --------------------------------------------------------------------
 # 1. delete what controllers created in AWS (LBs, volumes, Karpenter nodes) and wait;
 #    if the script fails, make stops HERE and the cluster is NOT destroyed
 # 2. destroy the cluster   3. drop the kube context (- : ignore failure if it's already gone)
+# Argo CD goes before the predestroy script: its self-heal would recreate what the script deletes (18.5)
 eks-down: eks-init
 	tools/tls-backup.sh $(ENV)
+	@if [ "$(ENV)" = prod ]; then $(MAKE) argocd-down; fi
 	tools/k8s-predestroy.sh $(CLUSTER) $(ENV)
 	$(TF) -chdir=$(EKS_DIR) destroy -input=false -auto-approve -var-file=$(ENV).tfvars
 	-kubectl config delete-context $(ENV)
@@ -114,4 +129,4 @@ down: guard-env
 	@date '+== down $(ENV): done %T'
 
 # these targets are commands, not files: always run them
-.PHONY: guard-env eks-init network-up eks-up platform-up up eks-down network-down down data-init data-up data-down
+.PHONY: guard-env eks-init network-up eks-up up eks-down network-down down data-init data-up data-down argocd-init argocd-up argocd-down

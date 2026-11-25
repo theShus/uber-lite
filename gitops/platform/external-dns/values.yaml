@@ -1,4 +1,4 @@
-# external-dns chart 1.23.0 txtOwnerId is set per environment by platform-up.sh
+# external-dns chart 1.23.0. txtOwnerId is set per environment by the root chart: cluster.name, from Terraform (18.3, 18.5)
 
 # ExternalDNS never connects to Kong, it watches Gateway API objects, and since Route is the GatewayAPI obj it just finds it and creates a DNS Record from it
 provider:

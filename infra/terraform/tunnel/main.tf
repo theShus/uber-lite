@@ -42,11 +42,11 @@ data "cloudflare_zero_trust_tunnel_cloudflared_token" "api" {
 
 # parameter.tf
 # The tunnel token, where the cluster can fetch it: External Secrets copies it into the
-# cloudflared namespace, so platform-up.sh no longer needs this layer's state.
+# cloudflared namespace, so nothing inside the cluster needs this layer's state.
 # Parameter Store, not Secrets Manager: the token doesn't rotate, and a standard
 # SecureString parameter with the AWS-managed aws/ssm key costs nothing.
 
-#WHY? - argo cd will replace platform-up.sh and needs to keep token somwhere
+#WHY? - Argo CD syncs only what is in Git, and a token cannot be in Git: it waits here for ESO
 
 resource "aws_ssm_parameter" "tunnel_token" {
   name        = "/uber-lite/${var.env}/cloudflared/token"

@@ -5,5 +5,7 @@ rules:
   indentation: {spaces: 2, indent-sequences: consistent}
   truthy: {check-keys: false}
 
+# Helm templates are Go templates that render YAML, not YAML: helm template checks them.
 ignore: |
   charts/*/templates/
+  gitops/bootstrap/*/templates/

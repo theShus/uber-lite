@@ -1,4 +1,3 @@
-
 env: ""
 
 home: true # tells argo if this cluster is where ArgoCD operates (if it installs pods here), aka is the cluster a hub or a spoke cluster.
@@ -185,7 +184,7 @@ components:
         patch: |-
           - op: replace
             path: /spec/dataFrom/0/extract/key
-            value: "{{ .Values.cluster.dbMasterSecretArn }}" 
+            value: "{{ .Values.cluster.dbMasterSecretArn }}"
 
 # Cloudflare Tunnel Deployment + Secret/ConfigMap exposing the internal Kong NLB without public ports
   cloudflared:

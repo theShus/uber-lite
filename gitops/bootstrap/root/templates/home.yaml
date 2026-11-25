@@ -8,7 +8,7 @@
 
 
 # Limiter for platform Application objects
-# we are allowing the platform Applications to have no restrictions, with "*" 
+# we are allowing the platform Applications to have no restrictions, with "*"
 
 {{- if .Values.home }}
 apiVersion: argoproj.io/v1alpha1

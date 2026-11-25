@@ -1,0 +1,12 @@
+{
+  // Helm templates are Go templates that produce YAML, not YAML: the YAML extension underlines every {{ }}.
+  // The "helm" language comes from the Kubernetes extension (ms-kubernetes-tools.vscode-kubernetes-tools).
+  "files.associations": {
+    "**/templates/*.yaml": "helm",
+    "**/templates/*.yml": "helm",
+    "**/templates/*.tpl": "helm",
+    "**/templates/NOTES.txt": "helm"
+  },
+  // Write LF line endings: the repo stores LF (.gitattributes), and helm/grep on the hub expect it.
+  "files.eol": "\n"
+}

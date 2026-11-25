@@ -1,0 +1,83 @@
+{{- /*
+  Generates one Argo CD Application (<component>-<env>) per platform component enabled for .Values.env.
+  - Orders rollout via argocd.argoproj.io/sync-wave (requires the custom Application health check in argocd-cm).
+  - Supports two source modes:
+      1. External Helm chart + this repo mounted as $values (pins releaseName to the component name).
+      2. Git directory (plain YAML or Kustomize, with optional external repo/revision and kustomizePatches).
+  - Applies ServerSideApply (for large CRDs), SkipDryRunOnMissingResource, CreateNamespace, retry backoff,
+    and RespectIgnoreDifferences whenever ignoreDifferences is configured.
+*/ -}}
+
+{{- range $name, $c := .Values.components }}
+{{- if has $.Values.env $c.envs }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $name }}-{{ $.Values.env }}
+  namespace: {{ $.Values.argocdNamespace }}
+  labels:
+    uber-lite/env: {{ $.Values.env }}
+    uber-lite/layer: platform
+  annotations:
+    argocd.argoproj.io/sync-wave: {{ $c.wave | quote }}
+spec:
+  project: platform # <-- THIS IS HOW THE AppProject FINDS THE APP
+  destination:
+    server: {{ $.Values.destination }}
+    namespace: {{ $c.namespace }}
+  {{- if $c.chart }}
+  sources:
+    - repoURL: {{ $c.chart.repo }}
+      chart: {{ $c.chart.name }}
+      targetRevision: {{ $c.chart.version }}
+      helm:
+        releaseName: {{ $name }}            # not the Application's name: resource names derive from it
+        valueFiles:
+          {{- range $c.values }}
+          - $values/{{ tpl . $ }}
+          {{- end }}
+        {{- with $c.parameters }}
+        parameters:
+          {{- range $k, $v := . }}
+          - name: {{ $k }}
+            value: {{ tpl $v $ | quote }}
+          {{- end }}
+        {{- end }}
+    - repoURL: {{ $.Values.repoURL }}
+      targetRevision: {{ $.Values.revision }}
+      ref: values
+  {{- else }}
+  source:
+    repoURL: {{ $c.repo | default $.Values.repoURL }}
+    targetRevision: {{ $c.revision | default $.Values.revision }}
+    path: {{ tpl $c.path $ }}
+    {{- with $c.kustomizePatches }}
+    kustomize:
+      patches:
+        {{- tpl (toYaml .) $ | nindent 8 }}
+    {{- end }}
+  {{- end }}
+  {{- with $c.ignoreDifferences }}
+  ignoreDifferences:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true              # big CRDs don't fit client-side apply's annotation
+      - SkipDryRunOnMissingResource=true  # custom resources whose CRDs arrive in the same sync
+      {{- if $c.ignoreDifferences }}
+      - RespectIgnoreDifferences=true     # and don't overwrite the ignored fields either
+      {{- end }}
+    retry:
+      limit: 10
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m
+{{- end }}
+{{- end }}

@@ -33,14 +33,14 @@ h upgrade --install reloader reloader --repo https://stakater.github.io/stakater
   --version 2.2.21 -n reloader --create-namespace \
   -f gitops/platform/operators/reloader/values.yaml --wait
 # --wait above: the CRDs and the webhook must be up before a store goes through admission
-k apply -f gitops/platform/secrets/cluster-secret-stores-$ENV.yaml
+k apply -f gitops/platform/secrets/stores/$ENV/stores.yaml
 
 
 echo "== Gateway API CRDs v1.3.0 (what KIC 3.5 is built against)"
 k apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.3.0/standard-install.yaml
 
-echo "== namespaces"
-for ns in kong uber-lite data; do k apply -k "gitops/platform/namespaces/$ns"; done
+echo "== namespaces (base: kong, uber-lite, data; prod adds cloudflared)"
+k apply -k "gitops/platform/namespaces/$ENV"
 
 echo "== kong (KIC + proxy pods; on EKS the proxy Service becomes an NLB via LBC)"
 h upgrade --install kong ingress --repo https://charts.konghq.com --version 0.24.0 -n kong \
@@ -49,8 +49,8 @@ h upgrade --install kong ingress --repo https://charts.konghq.com --version 0.24
 
 echo "== cert-manager"
 h upgrade --install cert-manager cert-manager --repo https://charts.jetstack.io --version v1.21.2 \
-  -n cert-manager --create-namespace -f gitops/platform/cert-manager/values.yaml --wait
-k apply -f gitops/platform/cert-manager/clusterissuers.yaml
+  -n cert-manager --create-namespace -f gitops/platform/operators/cert-manager/values.yaml --wait
+k apply -f gitops/platform/cert-manager-cluster-issuers/clusterissuers.yaml
 
 echo "== the gateway's certificate: restored if we have one (before the Gateway asks for it)"
 tools/tls-restore.sh "$ENV"
@@ -71,8 +71,7 @@ h upgrade --install external-dns external-dns --repo https://kubernetes-sigs.git
 
 echo "== cloudflared (the tunnel ul-$ENV is the permanent 'tunnel' layer; here only its connectors)"
 if [ "$ENV" = prod ]; then
-  k apply -k gitops/platform/namespaces/cloudflared
-  k apply -f gitops/platform/secrets/cloudflared-externalsecret.yaml
+  k apply -f gitops/platform/secrets/cloudflared/externalsecret.yaml
   k -n cloudflared wait externalsecret/cloudflared-token --for=condition=Ready --timeout=2m
   k apply -k gitops/platform/cloudflared
   k -n cloudflared rollout status deployment/cloudflared --timeout=3m

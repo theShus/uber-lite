@@ -1,0 +1,30 @@
+# Entry-point Application (App of Apps) for dev, applied once manually after installing Argo CD.
+# Renders the gitops/bootstrap/root chart with values-dev.yaml to create the AppProjects (wave -1),
+# all dev platform components in sync-wave order (waves 0–3), and the services Application (wave 5).
+
+# root.yaml --> root.templates --> Applicatio for each platform comp (platform pods from platform.yaml + values.components)
+#                              --> services Application ->  Applicatio for each app pod (from applicationset.yaml + git apps folder)
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root-dev
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/theShus/uber-lite.git
+    targetRevision: lab-18 # todo change this to some proper branch
+    path: gitops/bootstrap/root
+    helm:
+      valueFiles: [values-dev.yaml]
+      parameters:                   # isto što i helm --set revision=lab-18
+        - name: revision            # → .Values.revision → targetRevision svakog deteta
+          value: lab-18
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -22,8 +22,8 @@ k -n data delete secret rds-master-secret db-users --ignore-not-found
 # the Secrets dev-secrets.sh made with kubectl: ESO takes over these names
 k -n uber-lite delete secret rider-api-db trip-service-db payment-service-db --ignore-not-found
 
-sed "s|master-secret-arn-placeholder|$arn|" gitops/platform/secrets/db-external-secrets.yaml | k apply -f - # replace place holder arn
-k apply -k gitops/platform/secrets/db-job
+k kustomize gitops/platform/secrets/db | sed "s|master-secret-arn-placeholder|$arn|" | k apply -f -
+
 k -n data wait externalsecret/rds-master externalsecret/db-users --for=condition=Ready --timeout=2m
 if ! k -n data wait job/db-bootstrap --for=condition=Complete --timeout=5m; then
   k -n data logs job/db-bootstrap --tail=30 || true

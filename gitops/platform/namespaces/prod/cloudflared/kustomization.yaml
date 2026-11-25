@@ -4,4 +4,4 @@ namespace: cloudflared
 resources:
   - namespace.yaml
 components:
-  - ../../components/namespace-defaults
+  - ../../../components/namespace-defaults

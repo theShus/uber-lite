@@ -1,0 +1,194 @@
+env: ""
+
+home: true # tells argo if this cluster is where ArgoCD operates (if it installs pods here), aka is the cluster a hub or a spoke cluster.
+
+destination: https://kubernetes.default.svc # k8s api server where the components go
+
+argocdNamespace: argocd
+
+repoURL: https://github.com/theShus/uber-lite.git
+
+revision: main # we override this if we need a diff branch
+
+cluster: # gotten from terraform in prod, dev is empty
+  name: ""
+  region: eu-central-1
+  vpcId: ""
+  dbMasterSecretArn: ""
+
+components:
+  # Default gp3 StorageClass (ebs.csi.aws.com) for encrypted EBS volumes on AWS (no CRDs)
+  storage:
+    wave: 0
+    envs: [qa, prod]
+    namespace: kube-system
+    path: gitops/platform/storage
+
+  # Namespaces (kong, uber-lite, data, cloudflared) with Pod Security labels and default-deny policies
+  namespaces:
+    wave: 0
+    envs: [dev, qa, prod]
+    namespace: default
+    path: "gitops/platform/namespaces/{{ .Values.env }}"
+
+  # Official Gateway API CRDs: GatewayClass, Gateway, HTTPRoute, GRPCRoute, ReferenceGrant
+  gateway-api-crds:
+    wave: 0
+    envs: [dev, prod]
+    namespace: default
+    repo: https://github.com/kubernetes-sigs/gateway-api.git
+    revision: v1.3.0
+    path: config/crd/standard
+
+  # TLS certificate controller (Let's Encrypt) + CRDs: Certificate, CertificateRequest, Issuer, ClusterIssuer, Order, Challenge
+  cert-manager:
+    wave: 1
+    envs: [prod]
+    namespace: cert-manager
+    chart: {repo: https://charts.jetstack.io, name: cert-manager, version: v1.21.2}
+    values: [gitops/platform/operators/cert-manager/values.yaml]
+
+  # ESO (external secret operator) for syncing AWS secrets + CRDs: ExternalSecret, SecretStore, ClusterSecretStore, Password (generator)
+  external-secrets:
+    wave: 1
+    envs: [qa, prod]
+    namespace: external-secrets
+    chart: {repo: https://charts.external-secrets.io, name: external-secrets, version: 2.15.0}
+    values: [gitops/platform/operators/external-secrets/values.yaml]
+
+  # Stakater Reloader controller (no CRDs) — triggers rolling restarts when a Secret or ConfigMap changes
+  reloader:
+    wave: 1
+    envs: [qa, prod]
+    namespace: reloader
+    chart: {repo: https://stakater.github.io/stakater-charts, name: reloader, version: 2.2.21}
+    values: [gitops/platform/operators/reloader/values.yaml]
+
+  # Strimzi Kafka operator + CRDs: Kafka, KafkaNodePool, KafkaTopic, KafkaUser, KafkaConnect
+  strimzi:
+    wave: 1
+    envs: [dev, qa, prod]
+    namespace: strimzi
+    chart: {repo: https://strimzi.io/charts/, name: strimzi-kafka-operator, version: 1.3.0}
+    values: [gitops/platform/operators/strimzi/values.yaml]
+
+  # CloudNativePG operator + CRDs: Cluster, Backup, ScheduledBackup, Pooler (local Postgres on dev; qa/prod use RDS)
+  cnpg:
+    wave: 1
+    envs: [dev]
+    namespace: cnpg-system
+    chart: {repo: https://cloudnative-pg.github.io/charts, name: cloudnative-pg, version: 0.29.1}
+    values: [gitops/platform/operators/cnpg/values.yaml]
+
+  # AWS LBC for NLB/ALB + CRDs: TargetGroupBinding, IngressClassParams (genCA webhook cert requires ignoreDifferences)
+  aws-load-balancer-controller:
+    wave: 2
+    envs: [prod]
+    namespace: kube-system
+    chart: {repo: https://aws.github.io/eks-charts, name: aws-load-balancer-controller, version: 3.6.3}
+    values: [gitops/platform/aws-load-balancer-controller/values.yaml]
+    parameters:
+      clusterName: "{{ .Values.cluster.name }}"
+      region: "{{ .Values.cluster.region }}"
+      vpcId: "{{ .Values.cluster.vpcId }}"
+    ignoreDifferences:
+      - kind: Secret
+        name: aws-load-balancer-tls
+        jsonPointers: [/data]
+      - group: admissionregistration.k8s.io
+        kind: MutatingWebhookConfiguration
+        name: aws-load-balancer-webhook
+        jqPathExpressions: [".webhooks[]?.clientConfig.caBundle"]
+      - group: admissionregistration.k8s.io
+        kind: ValidatingWebhookConfiguration
+        name: aws-load-balancer-webhook
+        jqPathExpressions: [".webhooks[]?.clientConfig.caBundle"]
+
+  # ClusterSecretStore resources connecting ESO to AWS Secrets Manager and Parameter Store
+  secret-stores:
+    wave: 2
+    envs: [qa, prod]
+    namespace: external-secrets
+    path: "gitops/platform/secrets/stores/{{ .Values.env }}"
+
+  # ClusterIssuer resources for Let's Encrypt (staging and prod) via Route53 DNS-01 challenges
+  cluster-issuers:
+    wave: 2
+    envs: [prod]
+    namespace: cert-manager
+    path: gitops/platform/cert-manager-cluster-issuers
+
+# Kong Gateway proxy and controller + CRDs: KongPlugin, KongConsumer, KongClusterPlugin, TCPIngress, UDPIngress
+  kong:
+    wave: 2
+    envs: [dev, prod]
+    namespace: kong
+    chart: {repo: https://charts.konghq.com, name: ingress, version: 0.24.0}
+    values:
+      - gitops/platform/operators/kong/values.yaml
+      - "gitops/platform/operators/kong/values-{{ .Values.env }}.yaml"
+    ignoreDifferences:
+      - kind: Secret
+        name: kong-controller-validation-webhook-ca-keypair
+        jsonPointers: [/data]
+      - kind: Secret
+        name: kong-controller-validation-webhook-keypair
+        jsonPointers: [/data]
+      - group: admissionregistration.k8s.io
+        kind: ValidatingWebhookConfiguration
+        name: kong-controller-kong-validations
+        jqPathExpressions: [".webhooks[]?.clientConfig.caBundle"]
+
+# ExternalDNS controller + CRD: DNSEndpoint (automatically manages Route53 A/ALIAS records for Gateway/LB)
+  external-dns:
+    wave: 3
+    envs: [prod]
+    namespace: external-dns
+    chart: {repo: https://kubernetes-sigs.github.io/external-dns/, name: external-dns, version: 1.23.0}
+    values: [gitops/platform/external-dns/values.yaml]
+    parameters:
+      txtOwnerId: "{{ .Values.cluster.name }}"
+
+# Setting up GatewayClass, Gateway, HTTPRoutes, KongPlugins (rate-limit, key-auth), KongConsumer, and partner-key (prod)
+  gateway:
+    wave: 3
+    envs: [dev, prod]
+    namespace: kong
+    path: "gitops/platform/gateway/{{ .Values.env }}"
+
+# Kafka cluster (Kafka + KafkaNodePool + KafkaTopic)
+# Valkey (Redis cache)
+# Postgres Cluster (dev only)
+  data:
+    wave: 3
+    envs: [dev, qa, prod]
+    namespace: data
+    path: "gitops/platform/data/{{ .Values.env }}"
+
+# Tunnel token (from terraform) that is used for cloudflared pods to establish the CF Tunnel
+  cloudflared-secret:
+    wave: 3
+    envs: [prod]
+    namespace: cloudflared
+    path: gitops/platform/secrets/cloudflared
+
+# ExternalSecrets (rds-master, db-users) + db-bootstrap PostSync hook Job that creates RDS databases and roles
+  db:
+    wave: 4
+    envs: [qa, prod]
+    namespace: data
+    path: gitops/platform/secrets/db
+    kustomizePatches:
+      - target: {group: external-secrets.io, version: v1, kind: ExternalSecret, name: rds-master} # just the external secrets yaml
+        # ARN FOR MASTER SECRET - is known only after terraform runs, TODO NOT SURE WHERE THIS COMES FROM
+        patch: |-
+          - op: replace
+            path: /spec/dataFrom/0/extract/key
+            value: "{{ .Values.cluster.dbMasterSecretArn }}"
+
+# Cloudflare Tunnel Deployment + Secret/ConfigMap exposing the internal Kong NLB without public ports
+  cloudflared:
+    wave: 4
+    envs: [prod]
+    namespace: cloudflared
+    path: gitops/platform/cloudflared

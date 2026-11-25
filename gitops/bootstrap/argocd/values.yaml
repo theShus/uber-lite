@@ -9,14 +9,26 @@ configs:
   params:
     server.insecure: true   # TLS ends at the port-forward or the Gateway, not at argocd-server
     controller.diff.server.side: "true"   # diff via dry-run server-side apply: API server defaults count
-  cm:
-    timeout.reconciliation: 60s   # poll Git every minute (default 120s); production adds a webhook from GitHub
-    # App of apps: a parent waits for a child Application's own health, wave by wave (18.3).
-    # Argo CD removed this check in 1.8; it must be added back for sync waves across Applications.
+  cm: # poll Git every minute (default 120s); production adds a webhook from GitHub
+    timeout.reconciliation: 60s
+    # Teaches the parent (root) Application how to read the health of its child Applications
+    # so sync-waves actually wait for each other instead of deploying waves 0-5 all at once
+    # (Argo CD removed built-in Application health checks in v1.8).
+    #
+    # Two rules here:
+    # 1. Still syncing = Progressing: Argo CD ignores hooks (like PostSync Jobs) when calculating
+    #    an app's health. Without this, db-prod turns Healthy as soon as its ExternalSecrets are
+    #    ready, starting wave 5 (microservices) while the db-bootstrap Job is still creating DB roles.
+    # 2. Forward real child health: Once the sync finishes, pass the child's actual health status
+    #    to the parent so the next sync-wave only starts when the current wave is truly Healthy.
     resource.customizations.health.argoproj.io_Application: |
       hs = {}
       hs.status = "Progressing"
       hs.message = ""
+      if obj.status ~= nil and obj.status.operationState ~= nil and obj.status.operationState.phase == "Running" then
+        hs.message = "still syncing: " .. (obj.status.operationState.message or "")
+        return hs
+      end
       if obj.status ~= nil and obj.status.health ~= nil then
         hs.status = obj.status.health.status
         if obj.status.health.message ~= nil then
@@ -24,7 +36,6 @@ configs:
         end
       end
       return hs
-
 controller:
   resources:
     requests: {cpu: 100m, memory: 384Mi}

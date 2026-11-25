@@ -14,13 +14,13 @@ spec:
   project: default
   source:
     repoURL: https://github.com/theShus/uber-lite.git
-    targetRevision: lab-18 # todo change this to some proper branch
+    targetRevision: main
     path: gitops/bootstrap/root
     helm:
       valueFiles: [values-dev.yaml]
-      parameters:                   # isto što i helm --set revision=lab-18
-        - name: revision            # → .Values.revision → targetRevision svakog deteta
-          value: lab-18
+      # parameters:                   # isto što i helm --set revision=lab-18
+      #   - name: revision            # → .Values.revision → targetRevision svakog deteta
+      #     value: lab-18
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd

@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../base
+  - partner-key.yaml
 
 # replace host names for env
 

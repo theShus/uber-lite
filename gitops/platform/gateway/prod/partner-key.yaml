@@ -1,0 +1,39 @@
+# The partner app's API key for Kong's key-auth (14.3), generated in the cluster instead of by a script.
+# CreatedOnce: written at the first sync and never changed, so the key stays stable while the cluster lives.
+
+# this is for the key-auth plugin for the kong gateway
+
+apiVersion: generators.external-secrets.io/v1alpha1
+kind: Password
+metadata:
+  name: partner-app-key
+  namespace: uber-lite
+  labels: {app.kubernetes.io/part-of: uber-lite}
+spec:
+  length: 32
+  symbols: 0              # letters and digits only: it travels in an HTTP header
+  noUpper: false
+  allowRepeat: true
+---
+apiVersion: external-secrets.io/v1
+kind: ExternalSecret
+metadata:
+  name: partner-app-key
+  namespace: uber-lite
+  labels: {app.kubernetes.io/part-of: uber-lite}
+spec:
+  refreshPolicy: CreatedOnce
+  target:
+    name: partner-app-key
+    template:
+      metadata:
+        labels:
+          konghq.com/credential: key-auth   # what makes Kong treat the Secret as a credential (14.3)
+      data:
+        key: "{{ .password }}"
+  dataFrom:
+    - sourceRef:
+        generatorRef:
+          apiVersion: generators.external-secrets.io/v1alpha1
+          kind: Password
+          name: partner-app-key

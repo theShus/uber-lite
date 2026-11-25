@@ -22,7 +22,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: {{ $c.wave | quote }}
 spec:
-  project: platform
+  project: platform # <-- THIS IS HOW THE AppProject FINDS THE APP
   destination:
     server: {{ $.Values.destination }}
     namespace: {{ $c.namespace }}

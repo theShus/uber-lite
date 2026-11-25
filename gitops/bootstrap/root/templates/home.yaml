@@ -12,7 +12,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: platform
+  name: platform # <-- FIND Applications with platform in the spec.project
   namespace: {{ .Values.argocdNamespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "-1"

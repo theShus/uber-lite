@@ -15,9 +15,26 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "api" {
       {
         hostname = "api.${var.domain}"
         service  = "https://kong-gateway-proxy.kong.svc.cluster.local:443" #dns name of the auto created service of our Kong proxy pods
-        origin_request = {
+        origin_request = { # adjusts the request for the destination, where to redirect and in what form
           origin_server_name = "api.aws.${var.domain}" # SNI: Kong serves the *.aws certificate (16.4)
           http_host_header   = "api.aws.${var.domain}" # Kong's routes match api.aws.<domain>
+        }
+      },
+      {
+        # Argo CD's UI. Straight to argocd-server, not through Kong: Argo CD has its own login and
+        # runs with server.insecure (plain HTTP), because TLS already ended at Cloudflare's edge.
+        hostname = "argocd.${var.domain}"
+        service  = "http://argocd-server.argocd.svc.cluster.local:80" # the Service's 80 → the pod's 8080
+        origin_request = {
+            # origin_request = how cloudflared talks to the origin for THIS rule (the last hop only).
+            # access: cloudflared checks the Cf-Access-Jwt-Assertion header the edge adds after a login.
+            # Defense in depth: if the Access application is ever deleted or misconfigured, the edge would
+            # let requests in without a login, but cloudflared still refuses them here.
+          access = {
+            required  = true                                                  # no valid token, no request
+            team_name = var.cloudflare_team_name                              # where the signing keys come from
+            aud_tag   = [cloudflare_zero_trust_access_application.argocd.aud] # tokens for THIS app only
+          }
         }
       },
       { service = "http_status:404" }, # required catch-all, last
@@ -34,11 +51,19 @@ resource "cloudflare_dns_record" "api" {
   proxied = true
 }
 
+resource "cloudflare_dns_record" "argocd" {
+  zone_id = var.cloudflare_zone_id
+  name    = "argocd"
+  type    = "CNAME"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.api.id}.cfargotunnel.com"
+  ttl     = 1 # "automatic", required for proxied records
+  proxied = true
+}
+
 data "cloudflare_zero_trust_tunnel_cloudflared_token" "api" {
   account_id = var.cloudflare_account_id
   tunnel_id  = cloudflare_zero_trust_tunnel_cloudflared.api.id
 }
-
 
 # parameter.tf
 # The tunnel token, where the cluster can fetch it: External Secrets copies it into the

@@ -85,3 +85,12 @@ spec:
             matchLabels: {app.kubernetes.io/name: gateway}
       ports:
         - {protocol: TCP, port: 8443}
+    # Argo CD's UI, through the argocd.<domain> tunnel rule (18.7). Its own rule, because the port differs:
+    # a NetworkPolicy sees the POD's port, after the Service's DNAT (80 → 8080), not the Service's 80.
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: argocd}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: argocd-server}
+      ports:
+        - {protocol: TCP, port: 8080}

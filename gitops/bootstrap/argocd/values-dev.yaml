@@ -1,6 +1,12 @@
 # dev's Argo CD: its only cluster is itself. Declared as a Secret so it carries the labels the
 # services ApplicationSet selects on (18.4). Dev runs local images, so the image prefix is empty.
 configs:
+  cm:
+    accounts.viewer: login          # a local user that may log in (UI and CLI); no API key
+  rbac:
+    policy.default: ""              # nobody gets anything unless a rule says so
+    policy.csv: |
+      g, viewer, role:readonly
   clusterCredentials:
     in-cluster:
       server: https://kubernetes.default.svc

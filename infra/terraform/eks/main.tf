@@ -31,17 +31,22 @@ module "eks" {
   # Who may use the cluster: explicit access entries, nothing implicit
   authentication_mode                      = "API"
   enable_cluster_creator_admin_permissions = false
-  access_entries = {
-    for name, arn in var.cluster_admins : name => {
-      principal_arn = arn
-      policy_associations = {
-        admin = {
-          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = { type = "cluster" }
+  access_entries = merge(
+    {
+      for name, arn in var.cluster_admins : name => {
+        principal_arn = arn
+        policy_associations = {
+          admin = {
+            policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+            access_scope = { type = "cluster" }
+          }
         }
-      }
-    }
-  }
+    } },
+    local.hub_access_entries, # <-- empty on prod active if qa
+  )
+
+  # Add the firewall rule letting prod's Argo CD reach this cluster's API (empty on prod, active on qa)
+  security_group_additional_rules = local.hub_api_rules
 
   # Secrets encrypted with our own KMS key (module default: create_kms_key = true,
   # encryption_config = { resources = ["secrets"] }); only the deletion wait is shortened

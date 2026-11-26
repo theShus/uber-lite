@@ -1,0 +1,7 @@
+# QA: prod without the edge (no routes, 18.6). image.digest: tools/promote.sh qa writes it
+route:
+  enabled: false
+image:
+  digest: sha256:acb498a23dd6207dcfcca0c2bb45912505c2c3bd60d01c6c3948bc0231576a5e
+autoscaling:
+  minReplicas: 1

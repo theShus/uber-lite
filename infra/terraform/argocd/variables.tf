@@ -20,3 +20,19 @@ variable "argocd_chart_version" {
   type        = string
   default     = "10.10.5"
 }
+
+
+# ----- SPOKE PART -----
+
+# Comma-separated list of spoke environments that prod's Argo CD will also manage
+# Why a plain string instead of a Terraform list? Because Make passes it from the command line
+# as `-var spokes=qa`, and strings avoid ugly shell quoting. Empty string "" means prod only.
+variable "spokes" {
+  description = "Comma-separated environments this Argo CD also manages (our qa). default empty because prod only"
+  type        = string
+  default     = ""
+  validation {
+    condition     = alltrue([for s in compact(split(",", var.spokes)) : contains(["qa"], s)])
+    error_message = "The only spoke is qa."
+  }
+}

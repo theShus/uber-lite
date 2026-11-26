@@ -6,7 +6,7 @@ data "terraform_remote_state" "dns" {
   config  = { bucket = var.state_bucket, key = "dns/terraform.tfstate", region = var.region }
 }
 
-data "aws_caller_identity" "current" {}
+data "aws_caller_identity" "current" {} # currently logged in AWS profile in the CLI
 
 locals {
   zone_id  = data.terraform_remote_state.dns.outputs.zone_id

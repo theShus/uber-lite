@@ -31,11 +31,16 @@ spec:
           - git:
               repoURL: https://github.com/theShus/uber-lite.git
               revision: main
-              directories:
-                - path: gitops/apps/*
+              # A service runs in an environment only if it has that environment's values file
+              # this is used in case we want to make a new app pod, we can add only values-dev and it wont be made in qa or prod
+              files:
+                - path: 'gitops/apps/*/values-{{ index .metadata.labels "uber-lite/env" }}.yaml'
+
   template:
     metadata:
       name: '{{ .path.basename }}-{{ index .metadata.labels "uber-lite/env" }}'
+      annotations:
+        argocd.argoproj.io/manifest-generate-paths: '.;/gitops/apps/{{ .path.basename }}' # only re-render apps when the chart of services folder change, not with every push
       labels:
         uber-lite/env: '{{ index .metadata.labels "uber-lite/env" }}'
         uber-lite/layer: services
@@ -67,7 +72,7 @@ spec:
         syncOptions:
           - RespectIgnoreDifferences=true
         retry:
-          limit: 5
+          limit: 10        # QA's services start before QA's platform is ready ~20 min of attempts, not ~5
           backoff:
             duration: 10s
             factor: 2

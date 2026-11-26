@@ -15,9 +15,9 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "api" {
       {
         hostname = "api.${var.domain}"
         service  = "https://kong-gateway-proxy.kong.svc.cluster.local:443" #dns name of the auto created service of our Kong proxy pods
-        origin_request = { # adjusts the request for the destination, where to redirect and in what form
-          origin_server_name = "api.aws.${var.domain}" # SNI: Kong serves the *.aws certificate (16.4)
-          http_host_header   = "api.aws.${var.domain}" # Kong's routes match api.aws.<domain>
+        origin_request = {                                                 # adjusts the request for the destination, where to redirect and in what form
+          origin_server_name = "api.aws.${var.domain}"                     # SNI: Kong serves the *.aws certificate (16.4)
+          http_host_header   = "api.aws.${var.domain}"                     # Kong's routes match api.aws.<domain>
         }
       },
       {
@@ -26,10 +26,10 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "api" {
         hostname = "argocd.${var.domain}"
         service  = "http://argocd-server.argocd.svc.cluster.local:80" # the Service's 80 → the pod's 8080
         origin_request = {
-            # origin_request = how cloudflared talks to the origin for THIS rule (the last hop only).
-            # access: cloudflared checks the Cf-Access-Jwt-Assertion header the edge adds after a login.
-            # Defense in depth: if the Access application is ever deleted or misconfigured, the edge would
-            # let requests in without a login, but cloudflared still refuses them here.
+          # origin_request = how cloudflared talks to the origin for THIS rule (the last hop only).
+          # access: cloudflared checks the Cf-Access-Jwt-Assertion header the edge adds after a login.
+          # Defense in depth: if the Access application is ever deleted or misconfigured, the edge would
+          # let requests in without a login, but cloudflared still refuses them here.
           access = {
             required  = true                                                  # no valid token, no request
             team_name = var.cloudflare_team_name                              # where the signing keys come from

@@ -78,7 +78,7 @@ locals {
   # why not yaml - because we want a one command cluster build, this way we can run the app as we run the terra argocd chart
   # else we would need to with a command / manually go to EKS and run the k apply -f root.yaml
   # + it has vpc id and other stuff in it that we want to hide
-  # OLD ROOT APP OF APPS FOR PROD, NEW MIXED LIST BELLOW  
+  # OLD ROOT APP OF APPS FOR PROD, NEW MIXED LIST BELLOW
   #  roots = {
   #    root-prod = {
   #      namespace = "argocd"

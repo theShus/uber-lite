@@ -40,7 +40,8 @@ spec:
     metadata:
       name: '{{ .path.basename }}-{{ index .metadata.labels "uber-lite/env" }}'
       annotations:
-        argocd.argoproj.io/manifest-generate-paths: '.;/gitops/apps/{{ .path.basename }}' # only re-render apps when the chart of services folder change, not with every push
+        # only re-render apps when the chart or the service's folder changes, not with every push
+        argocd.argoproj.io/manifest-generate-paths: '.;/gitops/apps/{{ .path.basename }}'
       labels:
         uber-lite/env: '{{ index .metadata.labels "uber-lite/env" }}'
         uber-lite/layer: services

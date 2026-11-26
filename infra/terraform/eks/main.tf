@@ -31,7 +31,7 @@ module "eks" {
   # Who may use the cluster: explicit access entries, nothing implicit
   authentication_mode                      = "API"
   enable_cluster_creator_admin_permissions = false
-  access_entries = merge (
+  access_entries = merge(
     {
       for name, arn in var.cluster_admins : name => {
         principal_arn = arn
@@ -41,8 +41,8 @@ module "eks" {
             access_scope = { type = "cluster" }
           }
         }
-      } },
-      local.hub_access_entries, # <-- empty on prod active if qa
+    } },
+    local.hub_access_entries, # <-- empty on prod active if qa
   )
 
   # Add the firewall rule letting prod's Argo CD reach this cluster's API (empty on prod, active on qa)

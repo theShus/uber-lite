@@ -106,7 +106,7 @@ jobs:
       - uses: terraform-linters/setup-tflint@v6.3.2
         with:
           tflint_version: v0.64.0
-      - run: terraform fmt -check -recursive infra/terraform
+      - run: terraform fmt -check -diff -recursive infra/terraform
 
       - name: validate every layer
         run: |

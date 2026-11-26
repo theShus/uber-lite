@@ -1,0 +1,4 @@
+route:
+  hostnames: ["pricing.aws.shus.world"]
+image:
+  digest: sha256:eadd607e18e58555b7a83766f8dbeaf73dce421c8babe8f9e2bcd88dce28c1d7

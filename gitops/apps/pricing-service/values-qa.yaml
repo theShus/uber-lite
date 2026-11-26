@@ -1,4 +1,7 @@
+# QA: prod without the edge (no routes, 18.6). image.digest: tools/promote.sh qa writes it
 route:
-  hostnames: ["pricing.aws.shus.world"]
+  enabled: false
 image:
   digest: sha256:eadd607e18e58555b7a83766f8dbeaf73dce421c8babe8f9e2bcd88dce28c1d7
+autoscaling:
+  minReplicas: 1

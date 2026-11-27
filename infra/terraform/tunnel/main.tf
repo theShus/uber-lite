@@ -37,6 +37,17 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "api" {
           }
         }
       },
+      {
+        hostname = "grafana.${var.domain}"
+        service  = "http://kube-prometheus-stack-grafana.monitoring.svc.cluster.local:80"
+        origin_request = {
+          access = {
+            required  = true
+            team_name = var.cloudflare_team_name
+            aud_tag   = [cloudflare_zero_trust_access_application.argocd.aud]
+          }
+        }
+      },
       { service = "http_status:404" }, # required catch-all, last
     ]
   }
@@ -54,6 +65,15 @@ resource "cloudflare_dns_record" "api" {
 resource "cloudflare_dns_record" "argocd" {
   zone_id = var.cloudflare_zone_id
   name    = "argocd"
+  type    = "CNAME"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.api.id}.cfargotunnel.com"
+  ttl     = 1 # "automatic", required for proxied records
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "grafana" {
+  zone_id = var.cloudflare_zone_id
+  name    = "grafana"
   type    = "CNAME"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.api.id}.cfargotunnel.com"
   ttl     = 1 # "automatic", required for proxied records

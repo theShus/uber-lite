@@ -55,6 +55,7 @@ grafana:
 
 kubeStateMetrics:
   enabled: true
+  
 kube-state-metrics:
   resources:
     requests:

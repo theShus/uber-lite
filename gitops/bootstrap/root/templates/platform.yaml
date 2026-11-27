@@ -33,12 +33,13 @@ spec:
       targetRevision: {{ $c.chart.version }}
       helm:
         releaseName: {{ $name }}            # not the Application's name: resource names derive from it
+        {{- /* no value files (prometheus-crds) = no valueFiles key: an empty one renders null, which Argo's schema rejects */}}
         {{- with $c.values }}
-         valueFiles:
-           {{- range . }}
-             - $values/{{ tpl . $ }}
-           {{- end }}
-         {{- end }}
+        valueFiles:
+          {{- range . }}
+          - $values/{{ tpl . $ }}
+          {{- end }}
+        {{- end }}
         {{- with $c.parameters }}
         parameters:
           {{- range $k, $v := . }}

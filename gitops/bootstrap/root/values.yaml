@@ -59,8 +59,6 @@ components:
     chart: {repo: https://prometheus-community.github.io/helm-charts, name: kube-prometheus-stack, version: 92.9.0}
     values:
       - gitops/platform/operators/kube-prometheus-stack/values.yaml   # the template adds $values/
-    parameters:
-      prometheus.prometheusSpec.externalLabels.cluster: "{{ .Values.env }}"
 
   # Applies environment-specific monitoring manifests (Argo CD ServiceMonitor, custom rules/dashboards, and prod Grafana admin ExternalSecret)
   monitoring:

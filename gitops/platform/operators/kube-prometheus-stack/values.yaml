@@ -52,7 +52,9 @@ grafana:
       memory: 128Mi
     limits:
       memory: 256Mi
-
+  testFramework:
+    enabled: false   # Helm test pod: Argo CD would show it as a leftover Pod
+    
 kubeStateMetrics:
   enabled: true
 

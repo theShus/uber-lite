@@ -6,6 +6,9 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: argocd-metrics
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+    app.kubernetes.io/component: monitoring
   namespace: monitoring
 spec:
   namespaceSelector:
@@ -17,6 +20,6 @@ spec:
   endpoints:
     - port: http-metrics
       interval: 30s
-      metricRelabelings:
+      relabelings:          # once per target, before the scrape (metricRelabelings = per sample, for dropping series)
         - targetLabel: team
           replacement: platform

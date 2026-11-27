@@ -9,7 +9,7 @@
 */ -}}
 
 {{- range $name, $c := .Values.components }}
-{{- if has $.Values.env $c.envs }}
+{{- if and (has $.Values.env $c.envs) (not (has $name ($.Values.skip | default list))) }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -33,10 +33,12 @@ spec:
       targetRevision: {{ $c.chart.version }}
       helm:
         releaseName: {{ $name }}            # not the Application's name: resource names derive from it
-        valueFiles:
-          {{- range $c.values }}
-          - $values/{{ tpl . $ }}
-          {{- end }}
+        {{- with $c.values }}
+         valueFiles:
+           {{- range . }}
+             - $values/{{ tpl . $ }}
+           {{- end }}
+         {{- end }}
         {{- with $c.parameters }}
         parameters:
           {{- range $k, $v := . }}

@@ -1,0 +1,84 @@
+crds:
+  enabled: false # dont auto intall CRDs, as we already installed them by hand
+
+prometheusOperator:
+  tls:
+    enabled: false
+  admissionWebhooks:
+    enabled: false
+    patch:
+      enabled: false
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+prometheus:
+  prometheusSpec: # by default prometheus picks up only metrics when something is labeled with release: kube-prometheus-stack
+    serviceMonitorSelectorNilUsesHelmValues: false # if you disable this, it can pick it up no matter the label
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    probeSelectorNilUsesHelmValues: false
+    scrapeConfigSelectorNilUsesHelmValues: false
+    retention: 1d # How long will data be stored in TSDB
+    walCompression: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 400Mi
+      limits:
+        memory: 1Gi
+
+alertmanager:
+  alertmanagerSpec:
+    alertmanagerConfigSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
+
+grafana:
+  admin:
+    existingSecret: grafana-admin # user&pass secret created in (gitops\platform\monitoring\prod\grafana-admin-secret.yaml)
+    userKey: admin-user
+    passwordKey: admin-password 
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi
+
+kubeStateMetrics:
+  enabled: true
+kube-state-metrics:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 48Mi
+    limits:
+      memory: 128Mi
+
+nodeExporter:
+  enabled: true
+prometheus-node-exporter:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      memory: 64Mi
+
+# Na EKS-u control plane nije izložen, a na kind-u je vezan za localhost
+kubeEtcd:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeControllerManager:
+  enabled: false
+kubeProxy:
+  enabled: false

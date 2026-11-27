@@ -10,6 +10,8 @@ repoURL: https://github.com/theShus/uber-lite.git
 
 revision: main # we override this if we need a diff branch
 
+skip: []
+
 cluster: # gotten from terraform in prod, dev is empty
   name: ""
   region: eu-central-1
@@ -39,6 +41,38 @@ components:
     repo: https://github.com/kubernetes-sigs/gateway-api.git
     revision: v1.3.0
     path: config/crd/standard
+
+# Installs Prometheus Operator CRDs (ServiceMonitor, PodMonitor, Probe, ScrapeConfig, PrometheusRule, AlertmanagerConfig, Prometheus, Alertmanager, ThanosRuler, PrometheusAgent) before workloads sync
+  prometheus-crds:
+    namespace: monitoring
+    wave: 0
+    envs: [dev, qa, prod]
+    chart:
+      repoURL: https://prometheus-community.github.io/helm-charts
+      name: prometheus-operator-crds
+      targetRevision: 32.0.1
+
+  # Deploys Prometheus Operator, Prometheus TSDB, Alertmanager, Grafana, kube-state-metrics, and node-exporter (with chart CRDs disabled)
+  kube-prometheus-stack:
+    namespace: monitoring
+    wave: 1
+    envs: [dev, prod]
+    clusterLabel: dev
+    chart:
+      repoURL: https://prometheus-community.github.io/helm-charts
+      name: kube-prometheus-stack
+      targetRevision: 92.9.0
+    values:
+      - $values/gitops/platform/operators/kube-prometheus-stack/values.yaml
+    parameters:
+      prometheus.prometheusSpec.externalLabels.cluster: "{{ .Values.env }}"
+
+  # Applies environment-specific monitoring manifests (Argo CD ServiceMonitor, custom rules/dashboards, and prod Grafana admin ExternalSecret)
+  monitoring:
+    namespace: monitoring
+    wave: 1
+    envs: [dev, prod]
+    path: gitops/platform/monitoring/{{ .Values.env }}
 
   # TLS certificate controller (Let's Encrypt) + CRDs: Certificate, CertificateRequest, Issuer, ClusterIssuer, Order, Challenge
   cert-manager:

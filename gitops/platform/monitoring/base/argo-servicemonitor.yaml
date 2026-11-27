@@ -1,0 +1,22 @@
+# ServiceMonitor scrapes meterics from any pod that is behind a Service
+# here we are using it to monitor ArgoCD Controller pods
+# we have enabled the http-metrics port in valye.yaml in controller:metrics:enabled:true
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: argocd-metrics
+  namespace: monitoring
+spec:
+  namespaceSelector:
+    matchNames:
+      - argocd
+  selector:
+    matchLabels:
+      app.kubernetes.io/part-of: argocd
+  endpoints:
+    - port: http-metrics
+      interval: 30s
+      metricRelabelings:
+        - targetLabel: team
+          replacement: platform

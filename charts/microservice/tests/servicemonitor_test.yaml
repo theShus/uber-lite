@@ -1,0 +1,70 @@
+suite: servicemonitor
+templates:
+  - servicemonitor.yaml
+release:
+  name: payment-service
+set:
+  image.repository: example/app
+tests:
+  - it: scrapes the http port's /metrics by default
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ServiceMonitor
+      - equal:
+          path: spec.endpoints[0].port
+          value: http
+      - equal:
+          path: spec.endpoints[0].path
+          value: /metrics
+      - equal:
+          path: spec.endpoints[0].interval
+          value: 30s
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: payment-service
+
+  - it: has no namespace of its own, so it lands next to the Service it selects
+    asserts:
+      - notExists:
+          path: metadata.namespace
+      - notExists:
+          path: spec.namespaceSelector
+
+  - it: skips the headless Service, so no pod is scraped twice
+    asserts:
+      - contains:
+          path: spec.selector.matchExpressions
+          content:
+            key: uber-lite/headless
+            operator: DoesNotExist
+
+  - it: labels every series with the owning team
+    set:
+      team: payments
+    asserts:
+      - contains:
+          path: spec.endpoints[0].relabelings
+          content:
+            targetLabel: team
+            replacement: payments
+
+  - it: caps the samples per scrape
+    asserts:
+      - equal:
+          path: spec.sampleLimit
+          value: 5000
+
+  - it: fails the render without a team
+    set:
+      team: ""
+    asserts:
+      - failedTemplate: {}
+
+  - it: renders nothing when disabled
+    set:
+      metrics.serviceMonitor.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0

@@ -148,6 +148,31 @@
         "annotations": {"type": "object", "additionalProperties": {"type": "string"}}
       },
       "additionalProperties": false
+    },
+    "team": {"type": "string", "minLength": 1, "pattern": "^[a-z][a-z0-9-]*$"},
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "serviceMonitor": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "interval": {"type": "string", "pattern": "^[0-9]+(s|m)$"},
+            "sampleLimit": {"type": "integer", "minimum": 0}
+          },
+          "additionalProperties": false
+        },
+        "scrapeFrom": {
+          "type": "object",
+          "required": ["namespace", "podLabels"],
+          "properties": {
+            "namespace": {"type": "string", "minLength": 1},
+            "podLabels": {"type": "object", "additionalProperties": {"type": "string"}}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   },
   "definitions": {

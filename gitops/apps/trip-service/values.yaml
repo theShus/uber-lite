@@ -12,3 +12,5 @@ migration:
 networkPolicy:
   allowTo:
     - {namespace: data, podLabels: {strimzi.io/cluster: kafka}, port: 9092}
+
+team: rides

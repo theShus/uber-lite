@@ -4,10 +4,45 @@ templates:
 set:
   image.repository: example/app
 tests:
-  - it: denies all ingress when nobody is allowed in
+  - it: lets only Prometheus in by default, on the http port
+    asserts:
+      - lengthEqual:
+          path: spec.ingress
+          count: 1
+      - lengthEqual:                          # one peer = namespace AND pod selector, not "anything in monitoring"
+          path: spec.ingress[0].from
+          count: 1
+      - equal:
+          path: spec.ingress[0].from[0].namespaceSelector.matchLabels["kubernetes.io/metadata.name"]
+          value: monitoring
+      - equal:
+          path: spec.ingress[0].from[0].podSelector.matchLabels["app.kubernetes.io/name"]
+          value: prometheus
+      - equal:
+          path: spec.ingress[0].ports[0].port
+          value: http
+
+  - it: denies all ingress when metrics are off and nobody is allowed in
+    set:
+      metrics.serviceMonitor.enabled: false
     asserts:
       - isNullOrEmpty:
           path: spec.ingress
+
+  - it: keeps the scrape rule first, before allowFrom
+    set:
+      networkPolicy.allowFrom:
+        - {namespace: kong, podName: kong-gateway, port: 8080}
+    asserts:
+      - lengthEqual:
+          path: spec.ingress
+          count: 2
+      - equal:
+          path: spec.ingress[0].from[0].namespaceSelector.matchLabels["kubernetes.io/metadata.name"]
+          value: monitoring
+      - equal:
+          path: spec.ingress[1].from[0].namespaceSelector.matchLabels["kubernetes.io/metadata.name"]
+          value: kong
 
   - it: puts namespace and pod selectors in ONE element (AND), not two (OR)
     set:

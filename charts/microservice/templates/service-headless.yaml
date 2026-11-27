@@ -27,6 +27,7 @@ metadata:
   name: {{ include "microservice.name" . }}-headless
   labels:
     {{- include "microservice.labels" . | nindent 4 }}
+    uber-lite/headless: "true"       # the ServiceMonitor skips it: one scrape per pod, not two
 spec:
   clusterIP: None
   selector:

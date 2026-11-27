@@ -26,3 +26,5 @@ route:
   pathPrefixes: ["/rides"]
   annotations:
     konghq.com/plugins: key-auth-riders
+
+team: rides

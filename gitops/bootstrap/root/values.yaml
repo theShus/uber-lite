@@ -10,6 +10,8 @@ repoURL: https://github.com/theShus/uber-lite.git
 
 revision: main # we override this if we need a diff branch
 
+skip: []
+
 cluster: # gotten from terraform in prod, dev is empty
   name: ""
   region: eu-central-1
@@ -39,6 +41,31 @@ components:
     repo: https://github.com/kubernetes-sigs/gateway-api.git
     revision: v1.3.0
     path: config/crd/standard
+
+  # Prometheus Operator CRDs, apart from the stack so removing the stack never deletes every ServiceMonitor:
+  # ServiceMonitor, PodMonitor, Probe, ScrapeConfig, PrometheusRule, AlertmanagerConfig, Prometheus, Alertmanager, ThanosRuler, PrometheusAgent
+  prometheus-crds:
+    namespace: default    # cluster-scoped CRDs only: with monitoring, CreateNamespace would make it on qa without PSA labels
+    wave: 0
+    envs: [dev, qa, prod]
+    chart: {repo: https://prometheus-community.github.io/helm-charts, name: prometheus-operator-crds, version: 32.0.1}
+
+  # Deploys Prometheus Operator, Prometheus TSDB, Alertmanager, Grafana, kube-state-metrics, and node-exporter (with chart CRDs disabled)
+  kube-prometheus-stack:
+    namespace: monitoring
+    wave: 1
+    envs: [dev, prod]
+    clusterLabel: dev
+    chart: {repo: https://prometheus-community.github.io/helm-charts, name: kube-prometheus-stack, version: 92.9.0}
+    values:
+      - gitops/platform/operators/kube-prometheus-stack/values.yaml   # the template adds $values/
+
+  # Applies environment-specific monitoring manifests (Argo CD ServiceMonitor, custom rules/dashboards, and prod Grafana admin ExternalSecret)
+  monitoring:
+    namespace: monitoring
+    wave: 1
+    envs: [dev, prod]
+    path: gitops/platform/monitoring/{{ .Values.env }}
 
   # TLS certificate controller (Let's Encrypt) + CRDs: Certificate, CertificateRequest, Issuer, ClusterIssuer, Order, Challenge
   cert-manager:

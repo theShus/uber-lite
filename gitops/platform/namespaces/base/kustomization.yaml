@@ -3,4 +3,5 @@ kind: Kustomization
 resources:
   - data
   - kong
+  - monitoring
   - uber-lite

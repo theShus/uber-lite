@@ -9,7 +9,7 @@
 */ -}}
 
 {{- range $name, $c := .Values.components }}
-{{- if has $.Values.env $c.envs }}
+{{- if and (has $.Values.env $c.envs) (not (has $name ($.Values.skip | default list))) }}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -33,10 +33,13 @@ spec:
       targetRevision: {{ $c.chart.version }}
       helm:
         releaseName: {{ $name }}            # not the Application's name: resource names derive from it
+        {{- /* no value files (prometheus-crds) = no valueFiles key: an empty one renders null, which Argo's schema rejects */}}
+        {{- with $c.values }}
         valueFiles:
-          {{- range $c.values }}
+          {{- range . }}
           - $values/{{ tpl . $ }}
           {{- end }}
+        {{- end }}
         {{- with $c.parameters }}
         parameters:
           {{- range $k, $v := . }}

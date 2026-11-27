@@ -1,0 +1,12 @@
+# dev only: Grafana's login in plain text, on purpose. dev is the kind cluster on the hub, reached only by port-forward,
+# and it has no ESO. Never do this on prod: there ESO generates the password inside the cluster (../prod/grafana-admin-secret.yaml).
+apiVersion: v1
+kind: Secret
+metadata:
+  name: grafana-admin
+  namespace: monitoring
+  labels: {app.kubernetes.io/part-of: uber-lite}
+type: Opaque
+stringData:
+  admin-user: admin
+  admin-password: dev-admin

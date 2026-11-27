@@ -43,9 +43,9 @@ alertmanager:
 
 grafana:
   admin:
-    existingSecret: grafana-admin # user&pass secret created in (gitops\platform\monitoring\prod\grafana-admin-secret.yaml)
+    existingSecret: grafana-admin   # dev: plain Secret (monitoring/dev/grafana-admin.yaml); prod: ESO generator (monitoring/prod)
     userKey: admin-user
-    passwordKey: admin-password 
+    passwordKey: admin-password
   resources:
     requests:
       cpu: 50m
@@ -55,7 +55,7 @@ grafana:
 
 kubeStateMetrics:
   enabled: true
-  
+
 kube-state-metrics:
   resources:
     requests:

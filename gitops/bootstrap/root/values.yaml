@@ -42,7 +42,8 @@ components:
     revision: v1.3.0
     path: config/crd/standard
 
-# Installs Prometheus Operator CRDs (ServiceMonitor, PodMonitor, Probe, ScrapeConfig, PrometheusRule, AlertmanagerConfig, Prometheus, Alertmanager, ThanosRuler, PrometheusAgent) before workloads sync
+  # Prometheus Operator CRDs, apart from the stack so removing the stack never deletes every ServiceMonitor:
+  # ServiceMonitor, PodMonitor, Probe, ScrapeConfig, PrometheusRule, AlertmanagerConfig, Prometheus, Alertmanager, ThanosRuler, PrometheusAgent
   prometheus-crds:
     namespace: default    # cluster-scoped CRDs only: with monitoring, CreateNamespace would make it on qa without PSA labels
     wave: 0

@@ -11,6 +11,15 @@ spec:
       {{- include "microservice.selectorLabels" . | nindent 6 }}
   policyTypes: [Ingress, Egress]
   ingress:
+    {{- if .Values.metrics.serviceMonitor.enabled }}
+    {{- with .Values.metrics.scrapeFrom }}
+    - from:                          # Prometheus, scraping for the ServiceMonitor (19.2)
+        - {{- include "microservice.peer" . | trim | nindent 10 }}
+      ports:
+        - port: http                 # the pod's named container port (8080), after the Service's DNAT
+          protocol: TCP
+    {{- end }}
+    {{- end }}
     {{- range .Values.networkPolicy.allowFrom }}
     - from:
         - {{- include "microservice.peer" . | trim | nindent 10 }}

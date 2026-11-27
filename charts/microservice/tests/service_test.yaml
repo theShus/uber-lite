@@ -24,6 +24,9 @@ tests:
       - equal:
           path: spec.clusterIP
           value: None
+      - equal:                                # the ServiceMonitor excludes it by this label (19.2)
+          path: metadata.labels["uber-lite/headless"]
+          value: "true"
       - contains:
           path: spec.ports
           content:

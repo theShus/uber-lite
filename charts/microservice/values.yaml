@@ -93,3 +93,21 @@ route:
   hostnames: []
   pathPrefixes: ["/"]
   annotations: {}
+
+
+# metrics
+
+# The team that owns this service. Every metric carries it as the `team` label, so alerts reach the owner (19.5).
+team: platform
+
+# Prometheus scrapes /metrics on the http port (19.2).
+metrics:
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+    sampleLimit: 5000
+  # Who may scrape: the NetworkPolicy gets an ingress rule for these pods on the http port.
+  scrapeFrom:
+    namespace: monitoring
+    podLabels:
+      app.kubernetes.io/name: prometheus

@@ -1,0 +1,30 @@
+{{- /* templates/servicemonitor.yaml */ -}}
+{{- if .Values.metrics.serviceMonitor.enabled }}
+{{/* Prometheus scrapes /metrics on the http port of every pod behind this service's Service (19.2).
+     No namespace and no namespaceSelector: it lands in uber-lite next to the Service (the ApplicationSet's
+     destination) and a ServiceMonitor without a namespaceSelector looks only in its own namespace. */}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "microservice.name" . }}
+  labels:
+    {{- include "microservice.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "microservice.selectorLabels" . | nindent 6 }}
+    matchExpressions:
+      # pricing also has a headless Service with the same labels and an http port:
+      # selecting both would scrape every pod twice and double every sum(rate(...))
+      - {key: uber-lite/headless, operator: DoesNotExist}
+  endpoints:
+    - port: http                     # the Service's port NAME, not a number
+      path: /metrics
+      interval: {{ .Values.metrics.serviceMonitor.interval }}
+      relabelings:
+        # a constant label on every series from this target: alerts route by owner (19.5)
+        - targetLabel: team
+          replacement: {{ required "team is required" .Values.team | quote }}
+  # a scrape returning more samples fails, and only this target goes down (cardinality guard)
+  sampleLimit: {{ .Values.metrics.serviceMonitor.sampleLimit }}
+{{- end }}

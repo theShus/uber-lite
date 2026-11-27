@@ -22,4 +22,4 @@ spec:
       interval: 30s
       relabelings:          # once per target, before the scrape (metricRelabelings = per sample, for dropping series)
         - targetLabel: team
-          replacement: platform
+          replacement: platform # team=platform, we mark from what team the pods are, like literally what team built them, we mark it

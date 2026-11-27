@@ -44,7 +44,7 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "api" {
           access = {
             required  = true
             team_name = var.cloudflare_team_name
-            aud_tag   = [cloudflare_zero_trust_access_application.argocd.aud]
+            aud_tag   = [cloudflare_zero_trust_access_application.grafana.aud] # THIS connect the tunnel entry point to the cloudflare_zero_trust_access_application.grafana (infra\terraform\tunnel\access.tf)
           }
         }
       },

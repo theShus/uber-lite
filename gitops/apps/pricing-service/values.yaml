@@ -29,3 +29,5 @@ route:
   kind: GRPCRoute
   gateway:
     sectionName: https
+
+team: rides

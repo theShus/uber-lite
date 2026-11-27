@@ -32,3 +32,17 @@ resource "cloudflare_zero_trust_access_application" "argocd" {
 
   policies = [{ id = cloudflare_zero_trust_access_policy.argocd_admins.id, precedence = 1 }]
 }
+
+resource "cloudflare_zero_trust_access_application" "grafana" {
+  account_id                = var.cloudflare_account_id
+  name                      = "grafana-${var.env}"
+  type                      = "self_hosted"
+  domain                    = "grafana.${var.domain}"
+  destinations              = [{ type = "public", uri = "grafana.${var.domain}" }]
+  session_duration          = "8h"
+
+  allowed_idps              = [var.google_idp_id]
+  auto_redirect_to_identity = true
+
+  policies                  = [{ id = cloudflare_zero_trust_access_policy.argocd_admins.id, precedence = 1 }]
+}

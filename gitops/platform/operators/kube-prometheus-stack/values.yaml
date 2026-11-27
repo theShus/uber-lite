@@ -51,7 +51,7 @@ grafana:
       cpu: 50m
       memory: 128Mi
     limits:
-      memory: 256Mi
+      memory: 512Mi
   testFramework:
     enabled: false   # Helm test pod: Argo CD would show it as a leftover Pod
 

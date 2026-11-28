@@ -48,6 +48,18 @@ resource "cloudflare_zero_trust_tunnel_cloudflared_config" "api" {
           }
         }
       },
+      {
+        # KubeView's UI. It has no login of its own, so Access (and this token check) is all that guards it.
+        hostname = "kubeview.${var.domain}"
+        service  = "http://kubeview.kubeview.svc.cluster.local:8000"
+        origin_request = {
+          access = {
+            required  = true
+            team_name = var.cloudflare_team_name
+            aud_tag   = [cloudflare_zero_trust_access_application.kubeview.aud]
+          }
+        }
+      },
       { service = "http_status:404" }, # required catch-all, last
     ]
   }
@@ -74,6 +86,15 @@ resource "cloudflare_dns_record" "argocd" {
 resource "cloudflare_dns_record" "grafana" {
   zone_id = var.cloudflare_zone_id
   name    = "grafana"
+  type    = "CNAME"
+  content = "${cloudflare_zero_trust_tunnel_cloudflared.api.id}.cfargotunnel.com"
+  ttl     = 1 # "automatic", required for proxied records
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "kubeview" {
+  zone_id = var.cloudflare_zone_id
+  name    = "kubeview"
   type    = "CNAME"
   content = "${cloudflare_zero_trust_tunnel_cloudflared.api.id}.cfargotunnel.com"
   ttl     = 1 # "automatic", required for proxied records

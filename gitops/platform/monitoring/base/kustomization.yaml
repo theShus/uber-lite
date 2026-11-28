@@ -12,3 +12,11 @@ configMapGenerator:
       labels:
         grafana_dashboard: "1"
       disableNameSuffixHash: true
+  - name: dashboard-argocd-fleet
+    namespace: monitoring
+    files:
+      - dashboards/argocd-fleet.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      disableNameSuffixHash: true

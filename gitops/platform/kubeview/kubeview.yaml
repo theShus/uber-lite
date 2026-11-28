@@ -1,0 +1,133 @@
+# KubeView 2.2.1 (github.com/benc-uk/kubeview): a live, read-only map of the cluster's objects, prod only.
+# Plain manifests instead of its chart: the chart defaults to a LoadBalancer Service, the :latest image,
+# root, and nonResourceURLs "*". Reached only through the tunnel (kubeview.<domain>, behind Cloudflare Access).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubeview
+  namespace: kubeview
+  labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+---
+# The chart's rules, read-only. Secrets and ConfigMaps can't be dropped: KubeView starts one informer per
+# type and waits for ALL of them to sync before it opens its port, so a forbidden type hangs it at startup
+# (Running, never Ready). It replaces their values with *REDACTED* before they reach the browser, but the
+# pod itself holds every Secret in memory: one more reason it stays behind Access and a NetworkPolicy.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeview
+  labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments, replicasets, daemonsets, statefulsets]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods, pods/log, services, configmaps, secrets, endpoints, namespaces, persistentvolumeclaims, events]
+    verbs: [get, list, watch]
+  - apiGroups: [networking.k8s.io]
+    resources: [ingresses]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs, cronjobs]
+    verbs: [get, list, watch]
+  - apiGroups: [discovery.k8s.io]
+    resources: [endpointslices]
+    verbs: [get, list, watch]
+  - apiGroups: [autoscaling]
+    resources: [horizontalpodautoscalers]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeview
+  labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeview
+subjects:
+  - kind: ServiceAccount
+    name: kubeview
+    namespace: kubeview
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubeview
+  namespace: kubeview
+  labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+spec:
+  replicas: 1                     # the browser's live updates (SSE) are tied to the pod that serves them
+  selector:
+    matchLabels: {app.kubernetes.io/name: kubeview}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+    spec:
+      serviceAccountName: kubeview
+      automountServiceAccountToken: true   # it lists and watches the API with this token
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532          # the image has no USER line, so it would run as root
+        runAsGroup: 65532
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: kubeview
+          image: ghcr.io/benc-uk/kubeview:2.2.1   # check for newer: github.com/benc-uk/kubeview/releases
+          ports:
+            - {name: http, containerPort: 8000}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {memory: 192Mi}  # it caches every watched object of the cluster; the chart's 128Mi is tight
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true   # one Go binary with the UI embedded; writes nothing
+            capabilities: {drop: ["ALL"]}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubeview
+  namespace: kubeview
+  labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+spec:
+  type: ClusterIP
+  selector: {app.kubernetes.io/name: kubeview}
+  ports:
+    - {name: http, port: 8000, targetPort: http, protocol: TCP}
+---
+# On top of the namespace's default-deny and allow-dns (components/namespace-defaults).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: kubeview
+  namespace: kubeview
+  labels: {app.kubernetes.io/name: kubeview, app.kubernetes.io/part-of: uber-lite}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: kubeview}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:                       # only cloudflared, for the kubeview.<domain> tunnel rule
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: cloudflared}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: cloudflared}
+      ports:
+        - {protocol: TCP, port: 8000}
+  egress:
+    # The API server. The pod dials the kubernetes Service's ClusterIP; after DNAT the policy sees
+    # EKS's control-plane ENIs, private IPs inside the VPC that change when AWS replaces them.
+    # So the VPC's CIDR on 443, not two hardcoded IPs.
+    - to:
+        - ipBlock: {cidr: 10.0.0.0/16}   # infra/terraform/network: var.vpc_cidr
+      ports:
+        - {protocol: TCP, port: 443}

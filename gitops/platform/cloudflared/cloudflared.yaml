@@ -105,6 +105,15 @@ spec:
       ports:
         - {protocol: TCP, port: 3000}
 
+    # KubeView's UI, through the kubeview.<domain> tunnel rule. Service and pod port are both 8000.
+    - to:
+        - namespaceSelector:
+            matchLabels: {kubernetes.io/metadata.name: kubeview}
+          podSelector:
+            matchLabels: {app.kubernetes.io/name: kubeview}
+      ports:
+        - {protocol: TCP, port: 8000}
+
     # Access token check (18.7): with origin_request.access, cloudflared verifies each request's
     # Cf-Access-Jwt-Assertion against Access's public keys, fetched from
     # https://<team>.cloudflareaccess.com/cdn-cgi/access/certs over the internet (through the NAT).

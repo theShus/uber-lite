@@ -1,4 +1,14 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - argo-servicemonitor.yaml
+  - argocd-servicemonitor.yaml
+  - red-rules.yaml
+configMapGenerator:
+  - name: dashboard-uber-lite-red
+    namespace: monitoring
+    files:
+      - dashboards/uber-lite-red.json
+    options:
+      labels:
+        grafana_dashboard: "1"
+      disableNameSuffixHash: true

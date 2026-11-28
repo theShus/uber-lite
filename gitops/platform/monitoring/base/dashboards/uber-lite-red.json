@@ -1,0 +1,33 @@
+{
+  "uid": "uber-lite-red",
+  "title": "Uber-lite / Service RED",
+  "description": "Rate, Errors, Duration and container resources per microservice",
+  "tags": ["uber-lite", "red"],
+  "timezone": "utc",
+  "editable": false,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-1h", "to": "now"},
+  "templating": {
+    "list": [
+      {"type": "datasource", "name": "datasource", "label": "Data source", "query": "prometheus", "current": {}, "hide": 0, "refresh": 1, "regex": "", "options": []},
+      {"type": "query", "name": "job", "label": "Service", "datasource": {"type": "prometheus", "uid": "${datasource}"}, "query": {"query": "label_values(up{namespace=\"uber-lite\"}, job)", "refId": "StandardVariableQuery"}, "refresh": 1, "sort": 1, "multi": false, "includeAll": false}
+    ]
+  },
+  "annotations": {"list": []},
+  "panels": [
+    {"type": "row", "title": "RED Golden Signals ($job)", "id": 1, "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}, "panels": []},
+    {"type": "timeseries", "title": "Request rate (RPS)", "id": 2, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1}, "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 10}}, "overrides": []}, "targets": [{"expr": "job:http_requests:rate5m{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "{{job}}", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"}]},
+    {"type": "timeseries", "title": "5xx Error ratio", "id": 3, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 8, "y": 1}, "fieldConfig": {"defaults": {"unit": "percentunit", "min": 0, "custom": {"lineWidth": 2, "fillOpacity": 10}}, "overrides": []}, "targets": [{"expr": "job:http_request_errors:ratio_rate5m{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "error ratio", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"}]},
+    {"type": "timeseries", "title": "Latency quantiles (p50 / p95 / p99)", "id": 4, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 16, "y": 1}, "fieldConfig": {"defaults": {"unit": "s", "custom": {"lineWidth": 2, "fillOpacity": 5}}, "overrides": []}, "targets": [
+      {"expr": "job:http_request_duration_seconds:p50{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "p50", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"},
+      {"expr": "job:http_request_duration_seconds:p95{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "p95", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "B"},
+      {"expr": "job:http_request_duration_seconds:p99{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "p99", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "C"}
+    ]},
+    {"type": "row", "title": "Routes & Pod Resources", "id": 5, "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 9}, "panels": []},
+    {"type": "timeseries", "title": "Request rate by route", "id": 6, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 0, "y": 10}, "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 1, "fillOpacity": 10}}, "overrides": []}, "targets": [{"expr": "job_route:http_requests:rate5m{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "{{route}}", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"}]},
+    {"type": "timeseries", "title": "Pod CPU usage", "id": 7, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 8, "y": 10}, "fieldConfig": {"defaults": {"unit": "short", "custom": {"lineWidth": 1, "fillOpacity": 10}}, "overrides": []}, "targets": [{"expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"uber-lite\", pod=~\"$job-.*\", container=\"app\"}[5m]))", "legendFormat": "{{pod}}", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"}]},
+    {"type": "timeseries", "title": "Pod Memory working set", "id": 8, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 16, "y": 10}, "fieldConfig": {"defaults": {"unit": "bytes", "custom": {"lineWidth": 1, "fillOpacity": 10}}, "overrides": []}, "targets": [{"expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"uber-lite\", pod=~\"$job-.*\", container=\"app\"})", "legendFormat": "{{pod}}", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"}]}
+  ]
+}

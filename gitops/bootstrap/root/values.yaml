@@ -219,3 +219,10 @@ components:
     envs: [prod]
     namespace: cloudflared
     path: gitops/platform/cloudflared
+
+# KubeView: a live, read-only map of the cluster, at kubeview.<domain> through the tunnel (behind Access)
+  kubeview:
+    wave: 4
+    envs: [prod]
+    namespace: kubeview
+    path: gitops/platform/kubeview

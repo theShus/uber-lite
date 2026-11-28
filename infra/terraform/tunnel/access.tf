@@ -46,3 +46,18 @@ resource "cloudflare_zero_trust_access_application" "grafana" {
 
   policies = [{ id = cloudflare_zero_trust_access_policy.argocd_admins.id, precedence = 1 }]
 }
+
+# KubeView has no login of its own: this application is its only door.
+resource "cloudflare_zero_trust_access_application" "kubeview" {
+  account_id       = var.cloudflare_account_id
+  name             = "kubeview-${var.env}"
+  type             = "self_hosted"
+  domain           = "kubeview.${var.domain}"
+  destinations     = [{ type = "public", uri = "kubeview.${var.domain}" }]
+  session_duration = "8h"
+
+  allowed_idps              = [var.google_idp_id]
+  auto_redirect_to_identity = true
+
+  policies = [{ id = cloudflare_zero_trust_access_policy.argocd_admins.id, precedence = 1 }]
+}

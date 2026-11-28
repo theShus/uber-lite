@@ -1,0 +1,56 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: uber-lite-fleet
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: uber-lite
+spec:
+  groups:
+    - name: uber-lite-fleet
+      rules:
+        - alert: ArgoCDAppDegraded
+          expr: argocd_app_info{health_status="Degraded"} == 1
+          for: 10m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "{{ $labels.name }} has been Degraded for 10 minutes"
+            description: "Argo CD reports {{ $labels.name }} (project {{ $labels.project }}) as Degraded. Its tree in Argo CD shows which resource."
+        - alert: ArgoCDAppOutOfSync
+          expr: argocd_app_info{sync_status="OutOfSync"} == 1
+          for: 30m
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "{{ $labels.name }} has been OutOfSync for 30 minutes"
+            description: "Git and the cluster disagree for {{ $labels.name }}, and nothing has fixed it: a failing sync, or drift that self-heal can't undo."
+        - alert: ArgoCDSyncFailing
+          expr: sum by (name, project) (increase(argocd_app_sync_total{phase=~"Error|Failed"}[15m])) > 0
+          labels:
+            severity: warning
+            team: platform
+          annotations:
+            summary: "Syncs of {{ $labels.name }} are failing"
+            description: "{{ $labels.name }} had failed or errored sync operations in the last 15 minutes."
+        - alert: ArgoCDClusterUnreachable
+          expr: argocd_cluster_connection_status == 0
+          for: 5m
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "Argo CD can't reach {{ $labels.server }}"
+            description: "Nothing deploys to that cluster, and drift there goes unnoticed (18.6's break/fix)."
+        - alert: ArgoCDAppSetLostApplications
+          expr: |
+            (max_over_time(argocd_appset_owned_applications[30m]) - argocd_appset_owned_applications)
+              / max_over_time(argocd_appset_owned_applications[30m]) > 0.2
+          labels:
+            severity: critical
+            team: platform
+          annotations:
+            summary: "ApplicationSet {{ $labels.name }} lost more than 20% of its Applications"
+            description: "A generator stopped producing them: a cluster label, a folder, a template (18.4 §4)."

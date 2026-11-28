@@ -15,7 +15,9 @@
       {"type": "query", "name": "job", "label": "Service", "datasource": {"type": "prometheus", "uid": "${datasource}"}, "query": {"query": "label_values(up{namespace=\"uber-lite\"}, job)", "refId": "StandardVariableQuery"}, "refresh": 1, "sort": 1, "multi": false, "includeAll": false}
     ]
   },
-  "annotations": {"list": []},
+"annotations": {"list": [
+    {"name": "Deploys", "enable": true, "iconColor": "#8AB8FF", "datasource": {"type": "datasource", "uid": "grafana"}, "target": {"type": "tags", "tags": ["deploy"], "matchAny": true, "limit": 100}}
+  ]},
   "panels": [
     {"type": "row", "title": "RED Golden Signals ($job)", "id": 1, "collapsed": false, "gridPos": {"h": 1, "w": 24, "x": 0, "y": 0}, "panels": []},
     {"type": "timeseries", "title": "Request rate (RPS)", "id": 2, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "gridPos": {"h": 8, "w": 8, "x": 0, "y": 1}, "fieldConfig": {"defaults": {"unit": "reqps", "custom": {"lineWidth": 2, "fillOpacity": 10}}, "overrides": []}, "targets": [{"expr": "job:http_requests:rate5m{namespace=\"uber-lite\", job=\"$job\"}", "legendFormat": "{{job}}", "range": true, "datasource": {"type": "prometheus", "uid": "${datasource}"}, "refId": "A"}]},

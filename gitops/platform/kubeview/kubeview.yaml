@@ -124,10 +124,15 @@ spec:
       ports:
         - {protocol: TCP, port: 8000}
   egress:
-    # The API server. The pod dials the kubernetes Service's ClusterIP; after DNAT the policy sees
-    # EKS's control-plane ENIs, private IPs inside the VPC that change when AWS replaces them.
-    # So the VPC's CIDR on 443, not two hardcoded IPs.
+    # The API server, which the pod dials at the kubernetes Service's ClusterIP (172.20.0.1).
+    # Where the check happens decides which address the policy sees:
+    # - VPC CNI's agent checks on the pod's veth, BEFORE kube-proxy's DNAT: it sees 172.20.0.1. For
+    #   podSelector rules AWS's controller adds the matching Services' ClusterIPs itself; the API server
+    #   has no pods behind it, so nothing adds its ClusterIP. Without this /32: i/o timeout.
+    # - implementations that check after DNAT see EKS's control-plane ENIs, private IPs in the VPC
+    #   that change when AWS replaces them: the VPC's CIDR, not two hardcoded IPs.
     - to:
-        - ipBlock: {cidr: 10.0.0.0/16}   # infra/terraform/network: var.vpc_cidr
+        - ipBlock: {cidr: 172.20.0.1/32}   # the kubernetes Service: always the first IP of EKS's service CIDR
+        - ipBlock: {cidr: 10.0.0.0/16}     # infra/terraform/network: var.vpc_cidr
       ports:
         - {protocol: TCP, port: 443}
